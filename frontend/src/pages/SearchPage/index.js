@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { searchSchedules } from '../../utils/dataManager';
+import { searchSchedules, getAllSchedules } from '../../utils/dataManager';
 import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import WhatsAppButton from '../../components/common/WhatsAppButton';
@@ -31,9 +31,7 @@ function SearchPage() {
     berangkatDari: 'BANDUNG, PASTEUR2',
     tujuanKe: 'JAKARTA SELATAN, TEBET',
     tanggalPergi: '2025-11-17',
-    tanggalPulang: '',
-    penumpang: 1,
-    isPulangPergi: false
+    penumpang: 1
   });
 
   // Ambil data dari navigation state (jika ada)
@@ -45,15 +43,26 @@ function SearchPage() {
 
   // State untuk jadwal yang dipilih
   const [selectedJadwalPergi, setSelectedJadwalPergi] = useState(null);
-  const [selectedJadwalPulang, setSelectedJadwalPulang] = useState(null);
-
-  // State untuk tab aktif (pergi/pulang)
-  const [activeTab, setActiveTab] = useState('pergi');
 
   // State untuk jadwal hasil pencarian
   const [jadwalPergi, setJadwalPergi] = useState([]);
-  const [jadwalPulang, setJadwalPulang] = useState([]);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
+
+  // State untuk modal ubah pencarian
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tempSearchParams, setTempSearchParams] = useState({ ...searchParams });
+  const [availableLocations, setAvailableLocations] = useState([]);
+
+  // Load available locations untuk dropdown
+  useEffect(() => {
+    const schedules = getAllSchedules();
+    const locations = new Set();
+    schedules.forEach(schedule => {
+      locations.add(schedule.origin);
+      locations.add(schedule.destination);
+    });
+    setAvailableLocations(Array.from(locations).sort());
+  }, []);
 
   // Load jadwal dari localStorage berdasarkan searchParams
   useEffect(() => {
@@ -99,33 +108,31 @@ function SearchPage() {
     );
     setJadwalPergi(resultsPergi.map(transformScheduleData));
 
-    // Cari jadwal kepulangan (jika pulang pergi)
-    if (searchParams.isPulangPergi && searchParams.tanggalPulang) {
-      const resultsPulang = searchSchedules(
-        searchParams.tujuanKe, // Rute terbalik
-        searchParams.berangkatDari,
-        searchParams.tanggalPulang
-      );
-      setJadwalPulang(resultsPulang.map(transformScheduleData));
-    } else {
-      setJadwalPulang([]);
-    }
-
     setIsLoadingSchedules(false);
   }, [searchParams, isLoggedIn]);
 
   // Handler untuk memilih jadwal pergi
   const handleSelectJadwalPergi = (jadwal) => {
     setSelectedJadwalPergi(jadwal);
-    // Jika pulang pergi, pindah ke tab pulang
-    if (searchParams.isPulangPergi) {
-      setActiveTab('pulang');
-    }
   };
 
-  // Handler untuk memilih jadwal pulang
-  const handleSelectJadwalPulang = (jadwal) => {
-    setSelectedJadwalPulang(jadwal);
+  // Handler untuk buka modal ubah pencarian
+  const handleOpenModal = () => {
+    setTempSearchParams({ ...searchParams });
+    setIsModalOpen(true);
+  };
+
+  // Handler untuk tutup modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  // Handler untuk ubah pencarian
+  const handleUpdateSearch = (e) => {
+    e.preventDefault();
+    setSearchParams({ ...tempSearchParams });
+    setSelectedJadwalPergi(null);
+    setIsModalOpen(false);
   };
 
   // Handler untuk lanjut ke halaman booking
@@ -135,13 +142,7 @@ function SearchPage() {
       return;
     }
 
-    if (searchParams.isPulangPergi && !selectedJadwalPulang) {
-      alert('Silakan pilih jadwal kepulangan terlebih dahulu!');
-      return;
-    }
-
     // Create booking menggunakan addBooking dari AuthContext
-    // Data jadwal pergi (wajib)
     const bookingDataPergi = {
       scheduleId: selectedJadwalPergi.originalData.id,
       origin: selectedJadwalPergi.originalData.origin,
@@ -168,11 +169,8 @@ function SearchPage() {
       state: {
         bookingData: {
           ...result.booking,
-          // Tambahkan info untuk display
           jadwalPergi: selectedJadwalPergi,
-          jadwalPulang: selectedJadwalPulang,
-          penumpang: searchParams.penumpang,
-          isPulangPergi: searchParams.isPulangPergi
+          penumpang: searchParams.penumpang
         }
       }
     });
@@ -180,14 +178,10 @@ function SearchPage() {
 
   // Hitung total harga
   const calculateTotalPrice = () => {
-    let total = 0;
     if (selectedJadwalPergi) {
-      total += selectedJadwalPergi.harga * searchParams.penumpang;
+      return selectedJadwalPergi.harga * searchParams.penumpang;
     }
-    if (searchParams.isPulangPergi && selectedJadwalPulang) {
-      total += selectedJadwalPulang.harga * searchParams.penumpang;
-    }
-    return total;
+    return 0;
   };
 
   // Return early jika belum login atau masih loading
@@ -212,50 +206,17 @@ function SearchPage() {
               <span className="detail-item">📅 {searchParams.tanggalPergi}</span>
               <span className="detail-separator">•</span>
               <span className="detail-item">👥 {searchParams.penumpang} Penumpang</span>
-              {searchParams.isPulangPergi && (
-                <>
-                  <span className="detail-separator">•</span>
-                  <span className="detail-item">↔️ Pulang Pergi</span>
-                </>
-              )}
             </div>
           </div>
-          <button className="btn-edit-search">✏️ Ubah Pencarian</button>
+          <button className="btn-edit-search" onClick={handleOpenModal}>✏️ Ubah Pencarian</button>
         </div>
-
-        {/* Tab Navigation - Hanya tampil jika pulang pergi */}
-        {searchParams.isPulangPergi && (
-          <div className="tab-navigation">
-            <button 
-              className={`tab-btn ${activeTab === 'pergi' ? 'active' : ''} ${selectedJadwalPergi ? 'completed' : ''}`}
-              onClick={() => setActiveTab('pergi')}
-            >
-              <span className="tab-icon">✈️</span>
-              <span className="tab-label">Jadwal Berangkat</span>
-              {selectedJadwalPergi && <span className="check-icon">✓</span>}
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'pulang' ? 'active' : ''} ${selectedJadwalPulang ? 'completed' : ''}`}
-              onClick={() => setActiveTab('pulang')}
-              disabled={!selectedJadwalPergi}
-            >
-              <span className="tab-icon">🏠</span>
-              <span className="tab-label">Jadwal Pulang</span>
-              {selectedJadwalPulang && <span className="check-icon">✓</span>}
-            </button>
-          </div>
-        )}
 
         <div className="search-content">
           {/* Results Section */}
           <div className="results-section">
             <div className="results-header">
-              <h2 className="results-title">
-                {activeTab === 'pergi' ? 'Jadwal Keberangkatan' : 'Jadwal Kepulangan'}
-              </h2>
-              <p className="results-count">
-                {activeTab === 'pergi' ? jadwalPergi.length : jadwalPulang.length} jadwal tersedia
-              </p>
+              <h2 className="results-title">Jadwal Keberangkatan</h2>
+              <p className="results-count">{jadwalPergi.length} jadwal tersedia</p>
             </div>
 
             <div className="results-list">
@@ -264,42 +225,22 @@ function SearchPage() {
                   <div className="spinner"></div>
                   <p>Mencari jadwal tersedia...</p>
                 </div>
-              ) : activeTab === 'pergi' ? (
-                jadwalPergi.length > 0 ? (
-                  jadwalPergi.map(jadwal => (
-                    <SearchResultCard
-                      key={jadwal.id}
-                      jadwal={jadwal}
-                      onSelect={handleSelectJadwalPergi}
-                      isSelected={selectedJadwalPergi?.id === jadwal.id}
-                    />
-                  ))
-                ) : (
-                  <div className="empty-state">
-                    <span className="empty-icon">🚌</span>
-                    <h3>Tidak ada jadwal tersedia</h3>
-                    <p>Maaf, tidak ada jadwal untuk rute dan tanggal yang Anda pilih.</p>
-                    <p className="empty-hint">Coba pilih tanggal lain atau ubah rute perjalanan.</p>
-                  </div>
-                )
+              ) : jadwalPergi.length > 0 ? (
+                jadwalPergi.map(jadwal => (
+                  <SearchResultCard
+                    key={jadwal.id}
+                    jadwal={jadwal}
+                    onSelect={handleSelectJadwalPergi}
+                    isSelected={selectedJadwalPergi?.id === jadwal.id}
+                  />
+                ))
               ) : (
-                jadwalPulang.length > 0 ? (
-                  jadwalPulang.map(jadwal => (
-                    <SearchResultCard
-                      key={jadwal.id}
-                      jadwal={jadwal}
-                      onSelect={handleSelectJadwalPulang}
-                      isSelected={selectedJadwalPulang?.id === jadwal.id}
-                    />
-                  ))
-                ) : (
-                  <div className="empty-state">
-                    <span className="empty-icon">🚌</span>
-                    <h3>Tidak ada jadwal tersedia</h3>
-                    <p>Maaf, tidak ada jadwal pulang untuk rute dan tanggal yang Anda pilih.</p>
-                    <p className="empty-hint">Coba pilih tanggal lain atau ubah rute perjalanan.</p>
-                  </div>
-                )
+                <div className="empty-state">
+                  <span className="empty-icon">🚌</span>
+                  <h3>Tidak ada jadwal tersedia</h3>
+                  <p>Maaf, tidak ada jadwal untuk rute dan tanggal yang Anda pilih.</p>
+                  <p className="empty-hint">Coba pilih tanggal lain atau ubah rute perjalanan.</p>
+                </div>
               )}
             </div>
           </div>
@@ -323,22 +264,8 @@ function SearchPage() {
                 </div>
               )}
 
-              {/* Jadwal Pulang */}
-              {searchParams.isPulangPergi && selectedJadwalPulang && (
-                <div className="selected-schedule">
-                  <div className="schedule-header">
-                    <span className="schedule-type">🏠 Kepulangan</span>
-                  </div>
-                  <div className="schedule-details">
-                    <p className="schedule-route">{selectedJadwalPulang.dari} → {selectedJadwalPulang.tujuan}</p>
-                    <p className="schedule-time">📅 {selectedJadwalPulang.tanggal} • 🕐 {selectedJadwalPulang.jam}</p>
-                    <p className="schedule-price">Rp {selectedJadwalPulang.harga.toLocaleString('id-ID')} x {searchParams.penumpang}</p>
-                  </div>
-                </div>
-              )}
-
               {/* Total Price */}
-              {(selectedJadwalPergi || selectedJadwalPulang) && (
+              {selectedJadwalPergi && (
                 <>
                   <div className="summary-divider"></div>
                   <div className="summary-total">
@@ -352,19 +279,95 @@ function SearchPage() {
               <button 
                 className="btn-booking" 
                 onClick={handleLanjutBooking}
-                disabled={!selectedJadwalPergi || (searchParams.isPulangPergi && !selectedJadwalPulang)}
+                disabled={!selectedJadwalPergi}
               >
                 Lanjut ke Pemesanan
               </button>
 
               {/* Info */}
               <div className="booking-info">
-                <p className="info-text">💡 Pilih jadwal keberangkatan{searchParams.isPulangPergi ? ' dan kepulangan' : ''} untuk melanjutkan</p>
+                <p className="info-text">💡 Pilih jadwal keberangkatan untuk melanjutkan</p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal Ubah Pencarian */}
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Ubah Pencarian</h2>
+              <button className="modal-close" onClick={handleCloseModal}>×</button>
+            </div>
+            <form onSubmit={handleUpdateSearch} className="modal-form">
+              <div className="form-group">
+                <label htmlFor="berangkatDari">Berangkat Dari</label>
+                <select
+                  id="berangkatDari"
+                  value={tempSearchParams.berangkatDari}
+                  onChange={(e) => setTempSearchParams({ ...tempSearchParams, berangkatDari: e.target.value })}
+                  required
+                >
+                  <option value="">Pilih lokasi keberangkatan</option>
+                  {availableLocations.map((location) => (
+                    <option key={location} value={location}>{location}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="tujuanKe">Tujuan Ke</label>
+                <select
+                  id="tujuanKe"
+                  value={tempSearchParams.tujuanKe}
+                  onChange={(e) => setTempSearchParams({ ...tempSearchParams, tujuanKe: e.target.value })}
+                  required
+                >
+                  <option value="">Pilih tujuan</option>
+                  {availableLocations.map((location) => (
+                    <option key={location} value={location}>{location}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="tanggalPergi">Tanggal Pergi</label>
+                <input
+                  type="date"
+                  id="tanggalPergi"
+                  value={tempSearchParams.tanggalPergi}
+                  onChange={(e) => setTempSearchParams({ ...tempSearchParams, tanggalPergi: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="penumpang">Jumlah Penumpang</label>
+                <select
+                  id="penumpang"
+                  value={tempSearchParams.penumpang}
+                  onChange={(e) => setTempSearchParams({ ...tempSearchParams, penumpang: parseInt(e.target.value) })}
+                  required
+                >
+                  <option value="1">1 Penumpang</option>
+                  <option value="2">2 Penumpang</option>
+                  <option value="3">3 Penumpang</option>
+                  <option value="4">4 Penumpang</option>
+                  <option value="5">5 Penumpang</option>
+                </select>
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-cancel" onClick={handleCloseModal}>Batal</button>
+                <button type="submit" className="btn-submit">Cari Jadwal</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <WhatsAppButton phoneNumber="6281234567890" text="Tanya Pamela" />
       <Footer />
