@@ -6,6 +6,7 @@ import MyTicketPage from './pages/MyTicketPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfileUserPage from './pages/ProfileUserPage';
+import AdminPanelPage from './pages/AdminPanelPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/profile" element={<ProfileUserPage />} />
+          <Route path="/admin" element={<AdminPanelPage />} />
         </Routes>
       </div>
     </Router>
