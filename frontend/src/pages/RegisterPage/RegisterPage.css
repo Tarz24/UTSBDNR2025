@@ -130,10 +130,11 @@
 .register-form-wrapper {
   width: 100%;
   max-width: 450px;
+  padding-top: 350px;
 }
 
 .form-header {
-  margin-bottom: 35px;
+  margin-bottom: 40px;
 }
 
 .form-header h2 {
@@ -254,28 +255,31 @@
 
 /* Checkbox Group */
 .checkbox-group {
-  margin-top: 5px;
+  margin-top: 10px;
+  margin-bottom: 5px;
 }
 
 .checkbox-label {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
   cursor: pointer;
 }
 
 .checkbox-label input[type="checkbox"] {
-  margin-top: 3px;
   width: 18px;
   height: 18px;
+  margin-top: 0px;
   cursor: pointer;
   accent-color: #10b981;
+  flex-shrink: 0;
 }
 
 .checkbox-text {
   font-size: 14px;
   color: #666;
   line-height: 1.5;
+  margin-top: 0;
 }
 
 .terms-link {
