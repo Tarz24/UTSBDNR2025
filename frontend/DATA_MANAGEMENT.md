@@ -43,11 +43,18 @@ Sistem ini menggunakan **localStorage** untuk mengelola data sementara sebelum i
 [
   {
     "id": "JDW001",
-    "origin": "Jakarta",
-    "destination": "Surabaya",
-    "date": "2024-01-20",
+    "origin": "BANDUNG, PASTEUR2",
+    "destination": "JAKARTA SELATAN, TEBET",
+    "date": "2025-11-17",
     "time": "08:00",
-    "price": 250000,
+    "price": 113000,
+    "seats": 20,
+    "availableSeats": 12,
+    "status": "active",
+    "createdAt": "2024-01-05T08:00:00.000Z"
+  }
+]
+```
     "seats": 40,
     "availableSeats": 35,
     "status": "active",
@@ -339,7 +346,40 @@ const result = updateBookingStatus("BK001", "confirmed");
 
 ---
 
-## 📝 Usage Examples
+## � Jadwal Tersedia
+
+### Rute & Tanggal:
+
+1. **BANDUNG → JAKARTA**
+   - Tanggal: 17 November 2025
+   - Jam 08:00 (12 kursi tersedia) - Rp 113.000
+   - Jam 14:00 (8 kursi tersedia) - Rp 113.000
+
+2. **JAKARTA → BANDUNG**
+   - Tanggal: 18 November 2025
+   - Jam 09:00 (15 kursi tersedia) - Rp 113.000
+   - Jam 16:00 (5 kursi tersedia) - Rp 113.000
+
+3. **JAKARTA PUSAT → PURWAKARTA**
+   - Tanggal: 19 November 2025
+   - Jam 10:00 (18 kursi tersedia) - Rp 85.000
+
+4. **PURWAKARTA → JAKARTA SELATAN**
+   - Tanggal: 20 November 2025
+   - Jam 11:00 (10 kursi tersedia) - Rp 90.000
+
+**Format lengkap lokasi:**
+- `BANDUNG, PASTEUR2`
+- `JAKARTA SELATAN, TEBET`
+- `JAKARTA PUSAT, SARINAH`
+- `JAKARTA SELATAN, KUNINGAN`
+- `PURWAKARTA, KM72B`
+
+> 💡 **Tip Testing**: Gunakan tanggal 17-20 November 2025 untuk melihat jadwal tersedia!
+
+---
+
+## �📝 Usage Examples
 
 ### 1. Login User
 
@@ -466,10 +506,49 @@ Setelah data management selesai, langkah selanjutnya:
 
 ---
 
+## 🔄 Reset Data (Penting!)
+
+Jika Anda sudah pernah membuka aplikasi sebelumnya dan ingin memuat data jadwal yang baru, ikuti langkah berikut:
+
+### Cara 1: Via Browser Console (Recommended)
+1. Buka Browser Console (F12 atau Klik Kanan > Inspect > Console)
+2. Ketik: `BarayaDevTools.resetData()`
+3. Refresh halaman (F5)
+4. Data baru akan otomatis dimuat!
+
+### Cara 2: Manual via DevTools
+1. Buka DevTools (F12)
+2. Pergi ke tab **Application**
+3. Pilih **Local Storage** > `http://localhost:3000`
+4. Klik kanan > **Clear**
+5. Refresh halaman (F5)
+
+### Cara 3: Via Console Manual
+```javascript
+localStorage.removeItem('dataInitialized');
+localStorage.removeItem('users');
+localStorage.removeItem('schedules');
+localStorage.removeItem('bookings');
+location.reload();
+```
+
+> ⚠️ **Update Data**: Setiap kali ada perubahan di `dataManager.js`, Anda **WAJIB** reset data menggunakan salah satu cara di atas!
+
+---
+
 ## 🎉 Summary
 
-✅ AuthContext dengan login/register/logout functionality
-✅ dataManager untuk CRUD operations
-✅ Dummy data untuk 4 users, 6 schedules, 5 bookings
-✅ localStorage persistence
-✅ Ready untuk integrasi ke semua pages!
+✅ AuthContext dengan login/register/logout functionality  
+✅ dataManager untuk CRUD operations  
+✅ Dummy data: 4 users, 6 schedules (updated format), 5 bookings  
+✅ localStorage persistence  
+✅ Jadwal sesuai dengan lokasi di SearchForm  
+✅ Data tanggal 17-20 November 2025  
+✅ Ready untuk integrasi ke semua pages!  
+
+**📍 Lokasi yang tersedia:**
+- BANDUNG, PASTEUR2
+- JAKARTA SELATAN, TEBET
+- JAKARTA PUSAT, SARINAH
+- JAKARTA SELATAN, KUNINGAN
+- PURWAKARTA, KM72B

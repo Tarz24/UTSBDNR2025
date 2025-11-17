@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { searchSchedules } from '../../utils/dataManager';
 import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import WhatsAppButton from '../../components/common/WhatsAppButton';
@@ -9,6 +11,20 @@ import './SearchPage.css';
 function SearchPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isLoggedIn, loading } = useAuth();
+
+  // Redirect ke login jika belum login
+  useEffect(() => {
+    if (!loading && !isLoggedIn) {
+      alert('Anda harus login terlebih dahulu untuk mencari jadwal!');
+      navigate('/login', { 
+        state: { 
+          from: location.pathname,
+          message: 'Silakan login terlebih dahulu untuk mencari jadwal' 
+        } 
+      });
+    }
+  }, [isLoggedIn, loading, navigate, location.pathname]);
 
   // State untuk menyimpan data pencarian dari HomePage
   const [searchParams, setSearchParams] = useState({
@@ -34,101 +50,69 @@ function SearchPage() {
   // State untuk tab aktif (pergi/pulang)
   const [activeTab, setActiveTab] = useState('pergi');
 
-  // Dummy data jadwal (nanti akan diganti dengan API call)
-  const jadwalPergi = [
-    {
-      id: 1,
-      dari: 'BANDUNG, PASTEUR2',
-      tujuan: 'JAKARTA SELATAN, TEBET',
-      pool: 'Pasteur 2',
-      tanggal: '17 November 2025',
-      jam: '06:00',
-      kursiTersedia: 12,
-      totalKursi: 20,
-      harga: 113000
-    },
-    {
-      id: 2,
-      dari: 'BANDUNG, PASTEUR2',
-      tujuan: 'JAKARTA SELATAN, TEBET',
-      pool: 'Pasteur 2',
-      tanggal: '17 November 2025',
-      jam: '09:00',
-      kursiTersedia: 8,
-      totalKursi: 20,
-      harga: 113000
-    },
-    {
-      id: 3,
-      dari: 'BANDUNG, PASTEUR2',
-      tujuan: 'JAKARTA SELATAN, TEBET',
-      pool: 'Pasteur 2',
-      tanggal: '17 November 2025',
-      jam: '12:00',
-      kursiTersedia: 15,
-      totalKursi: 20,
-      harga: 113000
-    },
-    {
-      id: 4,
-      dari: 'BANDUNG, PASTEUR2',
-      tujuan: 'JAKARTA SELATAN, TEBET',
-      pool: 'Pasteur 2',
-      tanggal: '17 November 2025',
-      jam: '15:00',
-      kursiTersedia: 5,
-      totalKursi: 20,
-      harga: 113000
-    }
-  ];
+  // State untuk jadwal hasil pencarian
+  const [jadwalPergi, setJadwalPergi] = useState([]);
+  const [jadwalPulang, setJadwalPulang] = useState([]);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
 
-  // Jadwal pulang (rute terbalik)
-  const jadwalPulang = [
-    {
-      id: 5,
-      dari: 'JAKARTA SELATAN, TEBET',
-      tujuan: 'BANDUNG, PASTEUR2',
-      pool: 'Tebet',
-      tanggal: '20 November 2025',
-      jam: '07:00',
-      kursiTersedia: 10,
-      totalKursi: 20,
-      harga: 113000
-    },
-    {
-      id: 6,
-      dari: 'JAKARTA SELATAN, TEBET',
-      tujuan: 'BANDUNG, PASTEUR2',
-      pool: 'Tebet',
-      tanggal: '20 November 2025',
-      jam: '10:00',
-      kursiTersedia: 14,
-      totalKursi: 20,
-      harga: 113000
-    },
-    {
-      id: 7,
-      dari: 'JAKARTA SELATAN, TEBET',
-      tujuan: 'BANDUNG, PASTEUR2',
-      pool: 'Tebet',
-      tanggal: '20 November 2025',
-      jam: '14:00',
-      kursiTersedia: 6,
-      totalKursi: 20,
-      harga: 113000
-    },
-    {
-      id: 8,
-      dari: 'JAKARTA SELATAN, TEBET',
-      tujuan: 'BANDUNG, PASTEUR2',
-      pool: 'Tebet',
-      tanggal: '20 November 2025',
-      jam: '17:00',
-      kursiTersedia: 18,
-      totalKursi: 20,
-      harga: 113000
+  // Load jadwal dari localStorage berdasarkan searchParams
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    setIsLoadingSchedules(true);
+
+    // Helper function untuk transform data ke format yang dibutuhkan SearchResultCard
+    const transformScheduleData = (schedule) => {
+      // Extract pool name dari origin (e.g., "BANDUNG, PASTEUR2" -> "Pasteur 2")
+      const getPoolName = (location) => {
+        const parts = location.split(', ');
+        return parts.length > 1 ? parts[1] : parts[0];
+      };
+
+      // Format date (YYYY-MM-DD -> DD Month YYYY)
+      const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        const options = { day: 'numeric', month: 'long', year: 'numeric' };
+        return date.toLocaleDateString('id-ID', options);
+      };
+
+      return {
+        id: schedule.id,
+        dari: schedule.origin,
+        tujuan: schedule.destination,
+        pool: getPoolName(schedule.origin),
+        tanggal: formatDate(schedule.date),
+        jam: schedule.time,
+        kursiTersedia: schedule.availableSeats,
+        totalKursi: schedule.seats,
+        harga: schedule.price,
+        // Keep original data for booking
+        originalData: schedule
+      };
+    };
+
+    // Cari jadwal keberangkatan
+    const resultsPergi = searchSchedules(
+      searchParams.berangkatDari,
+      searchParams.tujuanKe,
+      searchParams.tanggalPergi
+    );
+    setJadwalPergi(resultsPergi.map(transformScheduleData));
+
+    // Cari jadwal kepulangan (jika pulang pergi)
+    if (searchParams.isPulangPergi && searchParams.tanggalPulang) {
+      const resultsPulang = searchSchedules(
+        searchParams.tujuanKe, // Rute terbalik
+        searchParams.berangkatDari,
+        searchParams.tanggalPulang
+      );
+      setJadwalPulang(resultsPulang.map(transformScheduleData));
+    } else {
+      setJadwalPulang([]);
     }
-  ];
+
+    setIsLoadingSchedules(false);
+  }, [searchParams, isLoggedIn]);
 
   // Handler untuk memilih jadwal pergi
   const handleSelectJadwalPergi = (jadwal) => {
@@ -186,6 +170,11 @@ function SearchPage() {
     }
     return total;
   };
+
+  // Return early jika belum login atau masih loading
+  if (loading || !isLoggedIn) {
+    return null;
+  }
 
   return (
     <div className="search-page">
@@ -251,24 +240,47 @@ function SearchPage() {
             </div>
 
             <div className="results-list">
-              {activeTab === 'pergi' ? (
-                jadwalPergi.map(jadwal => (
-                  <SearchResultCard
-                    key={jadwal.id}
-                    jadwal={jadwal}
-                    onSelect={handleSelectJadwalPergi}
-                    isSelected={selectedJadwalPergi?.id === jadwal.id}
-                  />
-                ))
+              {isLoadingSchedules ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Mencari jadwal tersedia...</p>
+                </div>
+              ) : activeTab === 'pergi' ? (
+                jadwalPergi.length > 0 ? (
+                  jadwalPergi.map(jadwal => (
+                    <SearchResultCard
+                      key={jadwal.id}
+                      jadwal={jadwal}
+                      onSelect={handleSelectJadwalPergi}
+                      isSelected={selectedJadwalPergi?.id === jadwal.id}
+                    />
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <span className="empty-icon">🚌</span>
+                    <h3>Tidak ada jadwal tersedia</h3>
+                    <p>Maaf, tidak ada jadwal untuk rute dan tanggal yang Anda pilih.</p>
+                    <p className="empty-hint">Coba pilih tanggal lain atau ubah rute perjalanan.</p>
+                  </div>
+                )
               ) : (
-                jadwalPulang.map(jadwal => (
-                  <SearchResultCard
-                    key={jadwal.id}
-                    jadwal={jadwal}
-                    onSelect={handleSelectJadwalPulang}
-                    isSelected={selectedJadwalPulang?.id === jadwal.id}
-                  />
-                ))
+                jadwalPulang.length > 0 ? (
+                  jadwalPulang.map(jadwal => (
+                    <SearchResultCard
+                      key={jadwal.id}
+                      jadwal={jadwal}
+                      onSelect={handleSelectJadwalPulang}
+                      isSelected={selectedJadwalPulang?.id === jadwal.id}
+                    />
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <span className="empty-icon">🚌</span>
+                    <h3>Tidak ada jadwal tersedia</h3>
+                    <p>Maaf, tidak ada jadwal pulang untuk rute dan tanggal yang Anda pilih.</p>
+                    <p className="empty-hint">Coba pilih tanggal lain atau ubah rute perjalanan.</p>
+                  </div>
+                )
               )}
             </div>
           </div>

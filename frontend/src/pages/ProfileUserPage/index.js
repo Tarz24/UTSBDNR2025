@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import TicketCard from '../../components/TicketCard';
@@ -7,132 +8,33 @@ import './ProfileUserPage.css';
 
 function ProfileUserPage() {
   const navigate = useNavigate();
-  // Dummy data user (nanti akan diambil dari AuthContext)
-  const [user, setUser] = useState({
-    _id: 'user123',
-    namaLengkap: 'Budi Santoso',
-    email: 'budi.santoso@email.com',
-    noHp: '081234567890',
-    tanggalBergabung: '2024-01-15T10:00:00'
-  });
+  const { currentUser, isLoggedIn, getUserBookings, updateProfile, changePassword } = useAuth();
 
-  // Dummy data riwayat pemesanan (nanti akan diambil dari API)
-  const [bookingHistory] = useState([
-    {
-      _id: '1',
-      kodePemesanan: 'BRY20241117001',
-      status: 'confirmed',
-      tanggalPemesanan: '2024-11-15T10:30:00',
-      jadwalPergi: {
-        _id: 'j1',
-        kotaAsal: 'Surabaya',
-        kotaTujuan: 'Jakarta',
-        tanggalKeberangkatan: '2024-11-20T08:00:00',
-        jamKeberangkatan: '08:00',
-        jamKedatangan: '16:00',
-        harga: 250000,
-        kursiTersedia: 30,
-        totalKursi: 45,
-        armada: 'Executive A'
-      },
-      jadwalPulang: {
-        _id: 'j2',
-        kotaAsal: 'Jakarta',
-        kotaTujuan: 'Surabaya',
-        tanggalKeberangkatan: '2024-11-25T09:00:00',
-        jamKeberangkatan: '09:00',
-        jamKedatangan: '17:00',
-        harga: 250000,
-        kursiTersedia: 25,
-        totalKursi: 45,
-        armada: 'Executive B'
-      },
-      jumlahPenumpang: 2,
-      totalHarga: 1000000,
-      namaPenumpang: 'Budi Santoso',
-      noHpPenumpang: '081234567890',
-      emailPenumpang: 'budi.santoso@email.com'
-    },
-    {
-      _id: '2',
-      kodePemesanan: 'BRY20241117002',
-      status: 'confirmed',
-      tanggalPemesanan: '2024-11-10T14:20:00',
-      jadwalPergi: {
-        _id: 'j3',
-        kotaAsal: 'Surabaya',
-        kotaTujuan: 'Bandung',
-        tanggalKeberangkatan: '2024-11-18T07:00:00',
-        jamKeberangkatan: '07:00',
-        jamKedatangan: '18:00',
-        harga: 300000,
-        kursiTersedia: 20,
-        totalKursi: 45,
-        armada: 'Super Executive'
-      },
-      jadwalPulang: null,
-      jumlahPenumpang: 1,
-      totalHarga: 300000,
-      namaPenumpang: 'Budi Santoso',
-      noHpPenumpang: '081234567890',
-      emailPenumpang: 'budi.santoso@email.com'
-    },
-    {
-      _id: '3',
-      kodePemesanan: 'BRY20241117003',
-      status: 'cancelled',
-      tanggalPemesanan: '2024-11-05T09:15:00',
-      jadwalPergi: {
-        _id: 'j4',
-        kotaAsal: 'Surabaya',
-        kotaTujuan: 'Malang',
-        tanggalKeberangkatan: '2024-11-08T10:00:00',
-        jamKeberangkatan: '10:00',
-        jamKedatangan: '13:00',
-        harga: 100000,
-        kursiTersedia: 35,
-        totalKursi: 45,
-        armada: 'Economy'
-      },
-      jadwalPulang: null,
-      jumlahPenumpang: 1,
-      totalHarga: 100000,
-      namaPenumpang: 'Budi Santoso',
-      noHpPenumpang: '081234567890',
-      emailPenumpang: 'budi.santoso@email.com'
-    },
-    {
-      _id: '4',
-      kodePemesanan: 'BRY20241020004',
-      status: 'completed',
-      tanggalPemesanan: '2024-10-15T11:00:00',
-      jadwalPergi: {
-        _id: 'j5',
-        kotaAsal: 'Surabaya',
-        kotaTujuan: 'Semarang',
-        tanggalKeberangkatan: '2024-10-20T09:00:00',
-        jamKeberangkatan: '09:00',
-        jamKedatangan: '15:00',
-        harga: 200000,
-        kursiTersedia: 28,
-        totalKursi: 45,
-        armada: 'Executive'
-      },
-      jadwalPulang: null,
-      jumlahPenumpang: 1,
-      totalHarga: 200000,
-      namaPenumpang: 'Budi Santoso',
-      noHpPenumpang: '081234567890',
-      emailPenumpang: 'budi.santoso@email.com'
+  // Redirect jika belum login
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
     }
-  ]);
+  }, [isLoggedIn, navigate]);
+
+  // Load booking history dari localStorage
+  const [bookingHistory, setBookingHistory] = useState([]);
+
+  useEffect(() => {
+    if (currentUser) {
+      const userBookings = getUserBookings();
+      setBookingHistory(userBookings);
+    }
+  }, [currentUser, getUserBookings]);
 
   // State untuk modal edit profile
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({
-    namaLengkap: user.namaLengkap,
-    noHp: user.noHp
+    namaLengkap: '',
+    noHp: ''
   });
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState(false);
 
   // State untuk modal ganti password
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -141,6 +43,8 @@ function ProfileUserPage() {
     newPassword: '',
     confirmPassword: ''
   });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   // State untuk filter
   const [filterStatus, setFilterStatus] = useState('all');
@@ -161,6 +65,7 @@ function ProfileUserPage() {
 
   // Format tanggal bergabung
   const formatJoinDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     const options = { year: 'numeric', month: 'long' };
     return date.toLocaleDateString('id-ID', options);
@@ -169,22 +74,44 @@ function ProfileUserPage() {
   // Handle edit profile
   const handleEditProfile = () => {
     setEditFormData({
-      namaLengkap: user.namaLengkap,
-      noHp: user.noHp
+      namaLengkap: currentUser?.namaLengkap || '',
+      noHp: currentUser?.noHp || ''
     });
+    setEditError('');
+    setEditSuccess(false);
     setShowEditModal(true);
   };
 
   const handleSaveProfile = () => {
-    // Nanti akan call API untuk update profile
-    console.log('Update profile:', editFormData);
-    setUser(prev => ({
-      ...prev,
+    setEditError('');
+    
+    // Validasi
+    if (!editFormData.namaLengkap || editFormData.namaLengkap.length < 3) {
+      setEditError('Nama minimal 3 karakter');
+      return;
+    }
+    
+    if (!editFormData.noHp || !/^[0-9]{10,13}$/.test(editFormData.noHp)) {
+      setEditError('Nomor HP tidak valid (10-13 digit)');
+      return;
+    }
+
+    // Update menggunakan AuthContext
+    const result = updateProfile({
       namaLengkap: editFormData.namaLengkap,
       noHp: editFormData.noHp
-    }));
-    setShowEditModal(false);
-    alert('Profile berhasil diupdate!');
+    });
+
+    if (result.success) {
+      console.log('✅ Profile updated successfully!');
+      setEditSuccess(true);
+      setTimeout(() => {
+        setShowEditModal(false);
+        setEditSuccess(false);
+      }, 1500);
+    } else {
+      setEditError(result.message);
+    }
   };
 
   // Handle ganti password
@@ -194,39 +121,61 @@ function ProfileUserPage() {
       newPassword: '',
       confirmPassword: ''
     });
+    setPasswordError('');
+    setPasswordSuccess(false);
     setShowPasswordModal(true);
   };
 
   const handleSavePassword = () => {
+    setPasswordError('');
+    
     // Validasi
     if (!passwordFormData.oldPassword || !passwordFormData.newPassword || !passwordFormData.confirmPassword) {
-      alert('Semua field wajib diisi!');
-      return;
-    }
-    if (passwordFormData.newPassword.length < 6) {
-      alert('Password baru minimal 6 karakter!');
-      return;
-    }
-    if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
-      alert('Password baru tidak cocok!');
+      setPasswordError('Semua field wajib diisi!');
       return;
     }
 
-    // Nanti akan call API untuk update password
-    console.log('Change password');
-    setShowPasswordModal(false);
-    alert('Password berhasil diubah!');
+    if (passwordFormData.newPassword.length < 6) {
+      setPasswordError('Password baru minimal 6 karakter');
+      return;
+    }
+
+    if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+      setPasswordError('Password baru tidak cocok!');
+      return;
+    }
+
+    // Update menggunakan AuthContext
+    const result = changePassword(passwordFormData.oldPassword, passwordFormData.newPassword);
+
+    if (result.success) {
+      console.log('✅ Password changed successfully!');
+      setPasswordSuccess(true);
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordSuccess(false);
+        setPasswordFormData({
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      }, 1500);
+    } else {
+      setPasswordError(result.message);
+    }
   };
 
-  // Handle logout
   const handleLogout = () => {
-    if (window.confirm('Apakah Anda yakin ingin keluar?')) {
-      console.log('Logout user');
-      // Nanti akan clear AuthContext dan redirect ke HomePage
-      alert('Logout berhasil!');
+    if (window.confirm('Apakah Anda yakin ingin logout?')) {
+      // Akan di-handle oleh Navbar
       navigate('/');
     }
   };
+
+  // Return early jika belum login atau user belum ada
+  if (!isLoggedIn || !currentUser) {
+    return null;
+  }
 
   return (
     <div className="profile-page">
@@ -238,16 +187,16 @@ function ProfileUserPage() {
           <div className="profile-card">
             <div className="profile-avatar">
               <div className="avatar-circle">
-                {user.namaLengkap.charAt(0).toUpperCase()}
+                {currentUser.namaLengkap.charAt(0).toUpperCase()}
               </div>
             </div>
             
             <div className="profile-info">
-              <h2>{user.namaLengkap}</h2>
-              <p className="profile-email">📧 {user.email}</p>
-              <p className="profile-phone">📱 {user.noHp}</p>
+              <h2>{currentUser.namaLengkap}</h2>
+              <p className="profile-email">📧 {currentUser.email}</p>
+              <p className="profile-phone">📱 {currentUser.noHp}</p>
               <p className="profile-join-date">
-                📅 Bergabung sejak {formatJoinDate(user.tanggalBergabung)}
+                📅 Bergabung sejak {formatJoinDate(currentUser.createdAt)}
               </p>
             </div>
 
@@ -335,7 +284,28 @@ function ProfileUserPage() {
           <div className="booking-list">
             {filteredBookings.length > 0 ? (
               filteredBookings.map(booking => (
-                <TicketCard key={booking._id} ticket={booking} />
+                <TicketCard 
+                  key={booking.id} 
+                  ticket={{
+                    _id: booking.id,
+                    kodePemesanan: booking.id,
+                    status: booking.status,
+                    tanggalPemesanan: booking.bookingDate,
+                    jadwalPergi: {
+                      _id: booking.scheduleId,
+                      kotaAsal: booking.origin,
+                      kotaTujuan: booking.destination,
+                      tanggalKeberangkatan: booking.date,
+                      jamKeberangkatan: booking.time,
+                      harga: booking.price
+                    },
+                    jumlahPenumpang: booking.seats,
+                    totalHarga: booking.totalPrice,
+                    namaPenumpang: booking.userName,
+                    noHpPenumpang: booking.userPhone,
+                    emailPenumpang: booking.userEmail
+                  }} 
+                />
               ))
             ) : (
               <div className="empty-state">
@@ -357,6 +327,18 @@ function ProfileUserPage() {
               <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
             </div>
             <div className="modal-body">
+              {editSuccess && (
+                <div className="alert alert-success">
+                  <span>✅</span>
+                  <span>Profile berhasil diupdate!</span>
+                </div>
+              )}
+              {editError && (
+                <div className="alert alert-error">
+                  <span>⚠️</span>
+                  <span>{editError}</span>
+                </div>
+              )}
               <div className="form-group">
                 <label>Nama Lengkap</label>
                 <input
@@ -379,7 +361,7 @@ function ProfileUserPage() {
                 <label>Email</label>
                 <input
                   type="email"
-                  value={user.email}
+                  value={currentUser.email}
                   disabled
                   className="disabled-input"
                 />
@@ -407,6 +389,18 @@ function ProfileUserPage() {
               <button className="close-btn" onClick={() => setShowPasswordModal(false)}>×</button>
             </div>
             <div className="modal-body">
+              {passwordSuccess && (
+                <div className="alert alert-success">
+                  <span>✅</span>
+                  <span>Password berhasil diubah!</span>
+                </div>
+              )}
+              {passwordError && (
+                <div className="alert alert-error">
+                  <span>⚠️</span>
+                  <span>{passwordError}</span>
+                </div>
+              )}
               <div className="form-group">
                 <label>Password Lama</label>
                 <input
