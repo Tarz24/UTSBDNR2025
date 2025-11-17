@@ -1,15 +1,15 @@
 import React from 'react';
 import './JadwalCard.css';
 
-function JadwalCard({ tanggal, tahun, rute, harga, diskon }) {
+function JadwalCard({ tanggal, tahun, rute, harga, diskon, onClick }) {
   return (
-    <div className="jadwal-card">
+    <div className="jadwal-card" onClick={onClick} style={{ cursor: 'pointer' }}>
       <div className="jadwal-header">
         <div className="jadwal-date">
           <div className="date-day">{tanggal}</div>
           <div className="date-year">{tahun}</div>
         </div>
-        <button className="btn-pulang-pergi">↔️ Pulang Pergi</button>
+        <button className="btn-pulang-pergi" onClick={(e) => e.stopPropagation()}>↔️ Pulang Pergi</button>
       </div>
       <div className="jadwal-body">
         <div className="route-info">

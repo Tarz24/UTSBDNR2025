@@ -53,7 +53,6 @@ function SearchForm({ onSearch }) {
           <div className="form-group">
             <label>Berangkat Dari</label>
             <div className="input-wrapper">
-              <span className="input-icon">📍</span>
               <select 
                 name="berangkatDari"
                 value={formData.berangkatDari}
@@ -76,7 +75,6 @@ function SearchForm({ onSearch }) {
           <div className="form-group">
             <label>Tujuan Ke</label>
             <div className="input-wrapper">
-              <span className="input-icon">🎯</span>
               <select 
                 name="tujuanKe"
                 value={formData.tujuanKe}
@@ -109,30 +107,6 @@ function SearchForm({ onSearch }) {
             </div>
           </div>
 
-          {/* Tanggal Pulang */}
-          <div className="form-group">
-            <label>
-              <input 
-                type="checkbox"
-                name="isPulangPergi"
-                checked={formData.isPulangPergi}
-                onChange={handleChange}
-                className="checkbox-pulang"
-              />
-              Tanggal Pulang
-            </label>
-            <div className="input-wrapper">
-              <input 
-                type="date"
-                name="tanggalPulang"
-                value={formData.tanggalPulang}
-                onChange={handleChange}
-                disabled={!formData.isPulangPergi}
-                placeholder="dd/mm/yyyy"
-              />
-            </div>
-          </div>
-
           {/* Penumpang */}
           <div className="form-group">
             <label>Penumpang</label>
@@ -153,7 +127,7 @@ function SearchForm({ onSearch }) {
         {/* Submit Button */}
         <div className="form-submit">
           <button type="submit" className="btn-cari-tiket">
-            🔍 CARI TIKET
+            CARI TIKET
           </button>
         </div>
       </form>
