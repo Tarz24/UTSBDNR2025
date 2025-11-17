@@ -1,0 +1,93 @@
+/* ========== JADWAL CARD ========== */
+.jadwal-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.jadwal-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.jadwal-header {
+  background: linear-gradient(135deg, #7B1FA2 0%, #9C27B0 100%);
+  padding: 1.5rem;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jadwal-date {
+  display: flex;
+  flex-direction: column;
+}
+
+.date-day {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.date-year {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.btn-pulang-pergi {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-pulang-pergi:hover {
+  background: white;
+  color: #7B1FA2;
+}
+
+.jadwal-body {
+  padding: 1.5rem;
+}
+
+.route-info {
+  margin-bottom: 1.2rem;
+}
+
+.route-item {
+  color: #333;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.price-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 2px solid #f0f0f0;
+}
+
+.price-label {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #2E7D32;
+}
+
+.discount-badge {
+  background: #FF9800;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
