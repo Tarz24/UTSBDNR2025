@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { 
+  getAllSchedules, 
+  getAllBookings, 
+  addSchedule, 
+  updateSchedule, 
+  deleteSchedule,
+  updateBookingStatus 
+} from '../../utils/dataManager';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import StatCard from '../../components/admin/StatCard';
 import ScheduleTable from '../../components/admin/ScheduleTable';
@@ -7,131 +16,61 @@ import './AdminPanelPage.css';
 
 const AdminPanelPage = () => {
   const navigate = useNavigate();
+  const { isLoggedIn, currentUser, loading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
   const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
 
-  // Dummy statistics data
-  const stats = {
-    totalSchedules: 24,
-    totalBookings: 156,
-    totalRevenue: 45650000,
-    pendingBookings: 8
+  // State untuk data dari localStorage
+  const [schedules, setSchedules] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [stats, setStats] = useState({
+    totalSchedules: 0,
+    totalBookings: 0,
+    totalRevenue: 0,
+    pendingBookings: 0
+  });
+
+  // Check admin role dan redirect jika bukan admin
+  useEffect(() => {
+    if (!loading && (!isLoggedIn || currentUser?.role !== 'admin')) {
+      alert('Anda tidak memiliki akses ke halaman ini!');
+      navigate('/');
+    }
+  }, [isLoggedIn, currentUser, loading, navigate]);
+
+  // Load data dari localStorage
+  useEffect(() => {
+    if (isLoggedIn && currentUser?.role === 'admin') {
+      loadData();
+    }
+  }, [isLoggedIn, currentUser]);
+
+  const loadData = () => {
+    // Load schedules
+    const schedulesData = getAllSchedules();
+    setSchedules(schedulesData);
+
+    // Load bookings
+    const bookingsData = getAllBookings();
+    setBookings(bookingsData);
+
+    // Calculate statistics
+    const totalRevenue = bookingsData
+      .filter(b => b.status === 'confirmed' || b.status === 'completed')
+      .reduce((sum, b) => sum + b.totalPrice, 0);
+
+    const pendingCount = bookingsData.filter(b => b.status === 'pending').length;
+
+    setStats({
+      totalSchedules: schedulesData.length,
+      totalBookings: bookingsData.length,
+      totalRevenue: totalRevenue,
+      pendingBookings: pendingCount
+    });
   };
-
-  // Dummy schedules data
-  const [schedules, setSchedules] = useState([
-    {
-      id: 'JDW001',
-      origin: 'Jakarta',
-      destination: 'Surabaya',
-      date: '2024-01-20',
-      time: '08:00',
-      price: 250000,
-      seats: 40,
-      availableSeats: 35,
-      status: 'active'
-    },
-    {
-      id: 'JDW002',
-      origin: 'Bandung',
-      destination: 'Yogyakarta',
-      date: '2024-01-21',
-      time: '09:00',
-      price: 200000,
-      seats: 40,
-      availableSeats: 28,
-      status: 'active'
-    },
-    {
-      id: 'JDW003',
-      origin: 'Surabaya',
-      destination: 'Bali',
-      date: '2024-01-22',
-      time: '10:00',
-      price: 300000,
-      seats: 40,
-      availableSeats: 40,
-      status: 'active'
-    },
-    {
-      id: 'JDW004',
-      origin: 'Jakarta',
-      destination: 'Bali',
-      date: '2024-01-23',
-      time: '07:00',
-      price: 350000,
-      seats: 40,
-      availableSeats: 15,
-      status: 'active'
-    }
-  ]);
-
-  // Dummy bookings data
-  const [bookings] = useState([
-    {
-      id: 'BK001',
-      userName: 'Ahmad Fadli',
-      email: 'ahmad@email.com',
-      phone: '081234567890',
-      scheduleId: 'JDW001',
-      origin: 'Jakarta',
-      destination: 'Surabaya',
-      date: '2024-01-20',
-      time: '08:00',
-      seats: 2,
-      totalPrice: 500000,
-      status: 'confirmed',
-      bookingDate: '2024-01-15'
-    },
-    {
-      id: 'BK002',
-      userName: 'Siti Nurhaliza',
-      email: 'siti@email.com',
-      phone: '081234567891',
-      scheduleId: 'JDW002',
-      origin: 'Bandung',
-      destination: 'Yogyakarta',
-      date: '2024-01-21',
-      time: '09:00',
-      seats: 1,
-      totalPrice: 200000,
-      status: 'pending',
-      bookingDate: '2024-01-16'
-    },
-    {
-      id: 'BK003',
-      userName: 'Budi Santoso',
-      email: 'budi@email.com',
-      phone: '081234567892',
-      scheduleId: 'JDW004',
-      origin: 'Jakarta',
-      destination: 'Bali',
-      date: '2024-01-23',
-      time: '07:00',
-      seats: 3,
-      totalPrice: 1050000,
-      status: 'completed',
-      bookingDate: '2024-01-14'
-    },
-    {
-      id: 'BK004',
-      userName: 'Dewi Kartika',
-      email: 'dewi@email.com',
-      phone: '081234567893',
-      scheduleId: 'JDW001',
-      origin: 'Jakarta',
-      destination: 'Surabaya',
-      date: '2024-01-20',
-      time: '08:00',
-      seats: 1,
-      totalPrice: 250000,
-      status: 'cancelled',
-      bookingDate: '2024-01-15'
-    }
-  ]);
 
   const [formData, setFormData] = useState({
     origin: '',
@@ -142,9 +81,41 @@ const AdminPanelPage = () => {
     seats: 40
   });
 
+  // State untuk search dan filter bookings
+  const [bookingSearch, setBookingSearch] = useState('');
+  const [bookingStatusFilter, setBookingStatusFilter] = useState('all');
+
+  // State untuk search dan filter schedules
+  const [scheduleSearch, setScheduleSearch] = useState('');
+  const [scheduleStatusFilter, setScheduleStatusFilter] = useState('all');
+
+  // Filter schedules berdasarkan search dan status
+  const filteredSchedules = schedules.filter(schedule => {
+    const matchSearch = scheduleSearch === '' ||
+      schedule.id.toLowerCase().includes(scheduleSearch.toLowerCase()) ||
+      schedule.origin.toLowerCase().includes(scheduleSearch.toLowerCase()) ||
+      schedule.destination.toLowerCase().includes(scheduleSearch.toLowerCase());
+    
+    const matchStatus = scheduleStatusFilter === 'all' || schedule.status === scheduleStatusFilter;
+    
+    return matchSearch && matchStatus;
+  });
+
+  // Filter bookings berdasarkan search dan status
+  const filteredBookings = bookings.filter(booking => {
+    const matchSearch = bookingSearch === '' || 
+      booking.userName.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+      booking.id.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+      booking.email.toLowerCase().includes(bookingSearch.toLowerCase());
+    
+    const matchStatus = bookingStatusFilter === 'all' || booking.status === bookingStatusFilter;
+    
+    return matchSearch && matchStatus;
+  });
+
   const handleLogout = () => {
     if (window.confirm('Apakah Anda yakin ingin logout?')) {
-      // TODO: Clear auth token
+      logout();
       navigate('/login');
     }
   };
@@ -180,32 +151,61 @@ const AdminPanelPage = () => {
   };
 
   const confirmDelete = () => {
-    setSchedules(schedules.filter(s => s.id !== selectedSchedule.id));
-    setShowDeleteConfirm(false);
-    setSelectedSchedule(null);
+    const result = deleteSchedule(selectedSchedule.id);
+    
+    if (result.success) {
+      loadData(); // Reload data dari localStorage
+      setShowDeleteConfirm(false);
+      setSelectedSchedule(null);
+      alert('Jadwal berhasil dihapus!');
+    } else {
+      alert(result.message || 'Gagal menghapus jadwal!');
+    }
   };
 
   const handleSubmitSchedule = (e) => {
     e.preventDefault();
     
     if (showAddScheduleModal) {
-      // Add new schedule
-      const newSchedule = {
-        id: `JDW${String(schedules.length + 1).padStart(3, '0')}`,
-        ...formData,
-        availableSeats: formData.seats,
-        status: 'active'
+      // Add new schedule ke localStorage
+      const scheduleData = {
+        origin: formData.origin,
+        destination: formData.destination,
+        date: formData.date,
+        time: formData.time,
+        price: parseInt(formData.price),
+        seats: parseInt(formData.seats)
       };
-      setSchedules([...schedules, newSchedule]);
-      setShowAddScheduleModal(false);
+
+      const result = addSchedule(scheduleData);
+      
+      if (result.success) {
+        loadData(); // Reload data dari localStorage
+        setShowAddScheduleModal(false);
+        alert('Jadwal berhasil ditambahkan!');
+      } else {
+        alert(result.message || 'Gagal menambahkan jadwal!');
+      }
     } else if (showEditScheduleModal) {
-      // Update existing schedule
-      setSchedules(schedules.map(s => 
-        s.id === selectedSchedule.id 
-          ? { ...s, ...formData, availableSeats: formData.seats - (s.seats - s.availableSeats) }
-          : s
-      ));
-      setShowEditScheduleModal(false);
+      // Update existing schedule di localStorage
+      const updates = {
+        origin: formData.origin,
+        destination: formData.destination,
+        date: formData.date,
+        time: formData.time,
+        price: parseInt(formData.price),
+        seats: parseInt(formData.seats)
+      };
+
+      const result = updateSchedule(selectedSchedule.id, updates);
+      
+      if (result.success) {
+        loadData(); // Reload data dari localStorage
+        setShowEditScheduleModal(false);
+        alert('Jadwal berhasil diperbarui!');
+      } else {
+        alert(result.message || 'Gagal memperbarui jadwal!');
+      }
     }
 
     // Reset form
@@ -255,6 +255,22 @@ const AdminPanelPage = () => {
     return <span className={`status-badge ${config.className}`}>{config.label}</span>;
   };
 
+  const handleUpdateBookingStatus = (bookingId, newStatus) => {
+    const result = updateBookingStatus(bookingId, newStatus);
+    
+    if (result.success) {
+      loadData(); // Reload data dari localStorage
+      alert(`Status booking berhasil diubah menjadi ${newStatus}!`);
+    } else {
+      alert(result.message || 'Gagal mengubah status booking!');
+    }
+  };
+
+  // Return early jika belum login, loading, atau bukan admin
+  if (loading || !isLoggedIn || currentUser?.role !== 'admin') {
+    return null;
+  }
+
   return (
     <div className="admin-panel">
       <AdminSidebar 
@@ -267,7 +283,7 @@ const AdminPanelPage = () => {
         <div className="admin-header">
           <h1>Dashboard Admin</h1>
           <div className="admin-user-info">
-            <span className="admin-name">Admin User</span>
+            <span className="admin-name">{currentUser?.namaLengkap || 'Admin'}</span>
             <button className="logout-btn" onClick={handleLogout}>Logout</button>
           </div>
         </div>
@@ -313,6 +329,33 @@ const AdminPanelPage = () => {
               </button>
             </div>
 
+            {/* Search and Filter Bar */}
+            <div className="bookings-controls">
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="🔍 Cari berdasarkan ID, asal, atau tujuan..."
+                  value={scheduleSearch}
+                  onChange={(e) => setScheduleSearch(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              <div className="filter-box">
+                <select
+                  value={scheduleStatusFilter}
+                  onChange={(e) => setScheduleStatusFilter(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="active">Aktif</option>
+                  <option value="inactive">Tidak Aktif</option>
+                </select>
+              </div>
+              <div className="results-count">
+                Menampilkan {filteredSchedules.length} dari {schedules.length} jadwal
+              </div>
+            </div>
+
             <div className="table-container">
               <table className="admin-table">
                 <thead>
@@ -329,34 +372,44 @@ const AdminPanelPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {schedules.map(schedule => (
-                    <tr key={schedule.id}>
-                      <td>{schedule.id}</td>
-                      <td>{schedule.origin} → {schedule.destination}</td>
-                      <td>{formatDate(schedule.date)}</td>
-                      <td>{schedule.time}</td>
-                      <td>{formatCurrency(schedule.price)}</td>
-                      <td>{schedule.seats}</td>
-                      <td>{schedule.availableSeats}</td>
-                      <td>{getStatusBadge(schedule.status)}</td>
-                      <td>
-                        <div className="action-buttons">
-                          <button 
-                            className="edit-btn"
-                            onClick={() => handleEditSchedule(schedule)}
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            className="delete-btn"
-                            onClick={() => handleDeleteSchedule(schedule)}
-                          >
-                            Hapus
-                          </button>
-                        </div>
+                  {filteredSchedules.length > 0 ? (
+                    filteredSchedules.map(schedule => (
+                      <tr key={schedule.id}>
+                        <td>{schedule.id}</td>
+                        <td>{schedule.origin} → {schedule.destination}</td>
+                        <td>{formatDate(schedule.date)}</td>
+                        <td>{schedule.time}</td>
+                        <td>{formatCurrency(schedule.price)}</td>
+                        <td>{schedule.seats}</td>
+                        <td>{schedule.availableSeats}</td>
+                        <td>{getStatusBadge(schedule.status)}</td>
+                        <td>
+                          <div className="action-buttons">
+                            <button 
+                              className="edit-btn"
+                              onClick={() => handleEditSchedule(schedule)}
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              className="delete-btn"
+                              onClick={() => handleDeleteSchedule(schedule)}
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="9" className="no-data">
+                        {scheduleSearch || scheduleStatusFilter !== 'all'
+                          ? '🔍 Tidak ada jadwal yang sesuai dengan pencarian'
+                          : '📅 Belum ada jadwal'}
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -367,6 +420,35 @@ const AdminPanelPage = () => {
           <div className="bookings-section">
             <div className="section-header">
               <h2>Manajemen Pemesanan</h2>
+            </div>
+
+            {/* Search and Filter Bar */}
+            <div className="bookings-controls">
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="🔍 Cari berdasarkan nama, ID, atau email..."
+                  value={bookingSearch}
+                  onChange={(e) => setBookingSearch(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              <div className="filter-box">
+                <select
+                  value={bookingStatusFilter}
+                  onChange={(e) => setBookingStatusFilter(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="pending">Menunggu</option>
+                  <option value="confirmed">Terkonfirmasi</option>
+                  <option value="completed">Selesai</option>
+                  <option value="cancelled">Dibatalkan</option>
+                </select>
+              </div>
+              <div className="results-count">
+                Menampilkan {filteredBookings.length} dari {bookings.length} pemesanan
+              </div>
             </div>
 
             <div className="table-container">
@@ -383,23 +465,68 @@ const AdminPanelPage = () => {
                     <th>Total</th>
                     <th>Status</th>
                     <th>Tgl. Booking</th>
+                    <th>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.map(booking => (
-                    <tr key={booking.id}>
-                      <td>{booking.id}</td>
-                      <td>{booking.userName}</td>
-                      <td>{booking.email}</td>
-                      <td>{booking.phone}</td>
-                      <td>{booking.origin} → {booking.destination}</td>
-                      <td>{formatDate(booking.date)}</td>
-                      <td>{booking.seats}</td>
-                      <td>{formatCurrency(booking.totalPrice)}</td>
-                      <td>{getStatusBadge(booking.status)}</td>
-                      <td>{formatDate(booking.bookingDate)}</td>
+                  {filteredBookings.length > 0 ? (
+                    filteredBookings.map(booking => (
+                      <tr key={booking.id}>
+                        <td>{booking.id}</td>
+                        <td>{booking.userName}</td>
+                        <td>{booking.email}</td>
+                        <td>{booking.phone}</td>
+                        <td>{booking.origin} → {booking.destination}</td>
+                        <td>{formatDate(booking.date)}</td>
+                        <td>{booking.seats}</td>
+                        <td>{formatCurrency(booking.totalPrice)}</td>
+                        <td>{getStatusBadge(booking.status)}</td>
+                        <td>{formatDate(booking.bookingDate)}</td>
+                        <td>
+                          <div className="action-buttons">
+                            {booking.status === 'pending' && (
+                              <>
+                                <button
+                                  className="action-btn confirm-btn"
+                                  onClick={() => handleUpdateBookingStatus(booking.id, 'confirmed')}
+                                  title="Konfirmasi"
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  className="action-btn cancel-btn"
+                                  onClick={() => handleUpdateBookingStatus(booking.id, 'cancelled')}
+                                  title="Batalkan"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            )}
+                            {booking.status === 'confirmed' && (
+                              <button
+                                className="action-btn complete-btn"
+                                onClick={() => handleUpdateBookingStatus(booking.id, 'completed')}
+                                title="Tandai Selesai"
+                              >
+                                ✓✓
+                              </button>
+                            )}
+                            {(booking.status === 'completed' || booking.status === 'cancelled') && (
+                              <span className="no-action">-</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="11" className="no-data">
+                        {bookingSearch || bookingStatusFilter !== 'all' 
+                          ? '🔍 Tidak ada pemesanan yang sesuai dengan pencarian'
+                          : '📝 Belum ada pemesanan'}
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
