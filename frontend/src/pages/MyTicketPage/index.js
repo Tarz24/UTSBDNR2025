@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import TicketCard from '../../components/TicketCard';
 import './MyTicketPage.css';
 
 function MyTicketPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // Dummy data tiket yang baru saja di-submit (nanti akan diterima dari BookingPage via routing)
   const [ticket] = useState({
     _id: '1',
@@ -42,6 +46,14 @@ function MyTicketPage() {
     emailPenumpang: 'budi.santoso@email.com'
   });
 
+  // Ambil data booking dari navigation state (jika ada)
+  useEffect(() => {
+    if (location.state?.bookingData) {
+      console.log('Booking data received:', location.state.bookingData);
+      // Nanti akan set ticket dari bookingData
+    }
+  }, [location.state]);
+
   const handleDownloadTicket = () => {
     // Nanti akan implement download PDF
     console.log('Download ticket:', ticket.kodePemesanan);
@@ -55,8 +67,11 @@ function MyTicketPage() {
   };
 
   const handleBackToHome = () => {
-    // Nanti akan navigate ke HomePage
-    console.log('Navigate to HomePage');
+    navigate('/');
+  };
+
+  const handleViewAllTickets = () => {
+    navigate('/profile');
   };
 
   return (
@@ -103,7 +118,7 @@ function MyTicketPage() {
           <button className="nav-btn back-btn" onClick={handleBackToHome}>
             ← Kembali ke Beranda
           </button>
-          <button className="nav-btn profile-btn" onClick={() => console.log('Navigate to Profile')}>
+          <button className="nav-btn profile-btn" onClick={handleViewAllTickets}>
             Lihat Semua Tiket →
           </button>
         </div>

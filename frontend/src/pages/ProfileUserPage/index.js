@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import TicketCard from '../../components/TicketCard';
 import './ProfileUserPage.css';
 
 function ProfileUserPage() {
+  const navigate = useNavigate();
   // Dummy data user (nanti akan diambil dari AuthContext)
   const [user, setUser] = useState({
     _id: 'user123',
@@ -222,6 +224,7 @@ function ProfileUserPage() {
       console.log('Logout user');
       // Nanti akan clear AuthContext dan redirect ke HomePage
       alert('Logout berhasil!');
+      navigate('/');
     }
   };
 

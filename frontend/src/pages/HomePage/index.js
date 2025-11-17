@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/common/Navbar';
 import HeroSection from '../../components/common/HeroSection';
 import JadwalSection from '../../components/common/JadwalSection';
@@ -7,9 +8,12 @@ import Footer from '../../components/common/Footer';
 import './HomePage.css';
 
 function HomePage() {
+  const navigate = useNavigate();
+
   const handleSearch = (formData) => {
     console.log('Searching with:', formData);
-    // Nanti akan redirect ke SearchResultPage
+    // Navigate ke SearchPage dengan data pencarian
+    navigate('/search', { state: { searchParams: formData } });
   };
 
   return (

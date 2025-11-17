@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
 function LoginPage() {
+  const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -61,19 +64,21 @@ function LoginPage() {
       console.log('Login data:', formData);
       alert('Login berhasil! (Dummy - belum terintegrasi backend)');
       setIsLoading(false);
-      // Nanti akan navigate ke HomePage
-      // navigate('/');
+      // Navigate ke HomePage setelah login sukses
+      navigate('/');
     }, 1500);
   };
 
   const handleRegisterRedirect = () => {
-    console.log('Navigate to RegisterPage');
-    // Nanti akan navigate ke RegisterPage
-    // navigate('/register');
+    navigate('/register');
   };
 
   const handleForgotPassword = () => {
     alert('Fitur reset password akan segera tersedia!');
+  };
+
+  const handleBackToHome = () => {
+    navigate('/');
   };
 
   return (
@@ -118,7 +123,6 @@ function LoginPage() {
               <div className="form-group">
                 <label htmlFor="email">Email</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">📧</span>
                   <input
                     type="email"
                     id="email"
@@ -136,7 +140,6 @@ function LoginPage() {
               <div className="form-group">
                 <label htmlFor="password">Password</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">🔒</span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     id="password"
@@ -204,7 +207,7 @@ function LoginPage() {
               <button
                 type="button"
                 className="back-btn"
-                onClick={() => console.log('Navigate to HomePage')}
+                onClick={handleBackToHome}
               >
                 ← Kembali ke Beranda
               </button>

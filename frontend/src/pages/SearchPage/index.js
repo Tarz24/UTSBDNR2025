@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import WhatsAppButton from '../../components/common/WhatsAppButton';
@@ -6,6 +7,9 @@ import SearchResultCard from '../../components/search/SearchResultCard';
 import './SearchPage.css';
 
 function SearchPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // State untuk menyimpan data pencarian dari HomePage
   const [searchParams, setSearchParams] = useState({
     berangkatDari: 'BANDUNG, PASTEUR2',
@@ -15,6 +19,13 @@ function SearchPage() {
     penumpang: 1,
     isPulangPergi: false
   });
+
+  // Ambil data dari navigation state (jika ada)
+  useEffect(() => {
+    if (location.state?.searchParams) {
+      setSearchParams(location.state.searchParams);
+    }
+  }, [location.state]);
 
   // State untuk jadwal yang dipilih
   const [selectedJadwalPergi, setSelectedJadwalPergi] = useState(null);
@@ -151,7 +162,17 @@ function SearchPage() {
       penumpang: searchParams.penumpang
     });
 
-    // Nanti akan redirect ke BookingPage
+    // Navigate ke MyTicketPage dengan data booking
+    navigate('/my-ticket', {
+      state: {
+        bookingData: {
+          jadwalPergi: selectedJadwalPergi,
+          jadwalPulang: selectedJadwalPulang,
+          penumpang: searchParams.penumpang,
+          totalHarga: calculateTotalPrice()
+        }
+      }
+    });
   };
 
   // Hitung total harga

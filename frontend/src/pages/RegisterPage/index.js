@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './RegisterPage.css';
 
 function RegisterPage() {
+  const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     namaLengkap: '',
     email: '',
@@ -96,15 +99,17 @@ function RegisterPage() {
       });
       alert('Pendaftaran berhasil! Silakan login dengan akun Anda.');
       setIsLoading(false);
-      // Nanti akan navigate ke LoginPage
-      // navigate('/login');
+      // Navigate ke LoginPage setelah register sukses
+      navigate('/login');
     }, 2000);
   };
 
   const handleLoginRedirect = () => {
-    console.log('Navigate to LoginPage');
-    // Nanti akan navigate ke LoginPage
-    // navigate('/login');
+    navigate('/login');
+  };
+
+  const handleBackToHome = () => {
+    navigate('/');
   };
 
   return (
@@ -158,7 +163,6 @@ function RegisterPage() {
               <div className="form-group">
                 <label htmlFor="namaLengkap">Nama Lengkap</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">👤</span>
                   <input
                     type="text"
                     id="namaLengkap"
@@ -176,7 +180,6 @@ function RegisterPage() {
               <div className="form-group">
                 <label htmlFor="email">Email</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">📧</span>
                   <input
                     type="email"
                     id="email"
@@ -194,7 +197,6 @@ function RegisterPage() {
               <div className="form-group">
                 <label htmlFor="noHp">Nomor HP</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">📱</span>
                   <input
                     type="tel"
                     id="noHp"
@@ -212,7 +214,6 @@ function RegisterPage() {
               <div className="form-group">
                 <label htmlFor="password">Password</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">🔒</span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     id="password"
@@ -237,7 +238,6 @@ function RegisterPage() {
               <div className="form-group">
                 <label htmlFor="confirmPassword">Konfirmasi Password</label>
                 <div className="input-wrapper">
-                  <span className="input-icon">🔒</span>
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     id="confirmPassword"
@@ -317,7 +317,7 @@ function RegisterPage() {
               <button
                 type="button"
                 className="back-btn"
-                onClick={() => console.log('Navigate to HomePage')}
+                onClick={handleBackToHome}
               >
                 ← Kembali ke Beranda
               </button>
