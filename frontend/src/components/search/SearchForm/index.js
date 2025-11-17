@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAllSchedules } from '../../../utils/dataManager';
 import './SearchForm.css';
 
 function SearchForm({ onSearch }) {
@@ -10,6 +11,23 @@ function SearchForm({ onSearch }) {
     penumpang: 1,
     isPulangPergi: false
   });
+
+  const [locations, setLocations] = useState([]);
+
+  // Load unique locations dari schedules di localStorage
+  useEffect(() => {
+    const schedules = getAllSchedules();
+    const uniqueLocations = new Set();
+
+    schedules.forEach(schedule => {
+      uniqueLocations.add(schedule.origin);
+      uniqueLocations.add(schedule.destination);
+    });
+
+    // Convert Set to Array dan sort alphabetically
+    const sortedLocations = Array.from(uniqueLocations).sort();
+    setLocations(sortedLocations);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -27,14 +45,6 @@ function SearchForm({ onSearch }) {
     }
   };
 
-  const locations = [
-    "BANDUNG, PASTEUR2",
-    "JAKARTA SELATAN, TEBET",
-    "JAKARTA PUSAT, SARINAH",
-    "JAKARTA SELATAN, KUNINGAN",
-    "PURWAKARTA, KM72B"
-  ];
-
   return (
     <div className="search-card">
       <form onSubmit={handleSubmit} className="search-form">
@@ -51,9 +61,13 @@ function SearchForm({ onSearch }) {
                 required
               >
                 <option value="">Pilih Keberangkatan</option>
-                {locations.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
+                {locations.length > 0 ? (
+                  locations.map(loc => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Tidak ada lokasi tersedia</option>
+                )}
               </select>
             </div>
           </div>
@@ -70,9 +84,13 @@ function SearchForm({ onSearch }) {
                 required
               >
                 <option value="">Pilih Tujuan</option>
-                {locations.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
+                {locations.length > 0 ? (
+                  locations.map(loc => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))
+                ) : (
+                  <option value="" disabled>Tidak ada lokasi tersedia</option>
+                )}
               </select>
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import StatCard from '../../components/admin/StatCard';
 import ScheduleTable from '../../components/admin/ScheduleTable';
+import BookingChart from '../../components/admin/BookingChart';
 import './AdminPanelPage.css';
 
 const AdminPanelPage = () => {
@@ -92,9 +93,9 @@ const AdminPanelPage = () => {
   // Filter schedules berdasarkan search dan status
   const filteredSchedules = schedules.filter(schedule => {
     const matchSearch = scheduleSearch === '' ||
-      schedule.id.toLowerCase().includes(scheduleSearch.toLowerCase()) ||
-      schedule.origin.toLowerCase().includes(scheduleSearch.toLowerCase()) ||
-      schedule.destination.toLowerCase().includes(scheduleSearch.toLowerCase());
+      (schedule.id && schedule.id.toLowerCase().includes(scheduleSearch.toLowerCase())) ||
+      (schedule.origin && schedule.origin.toLowerCase().includes(scheduleSearch.toLowerCase())) ||
+      (schedule.destination && schedule.destination.toLowerCase().includes(scheduleSearch.toLowerCase()));
     
     const matchStatus = scheduleStatusFilter === 'all' || schedule.status === scheduleStatusFilter;
     
@@ -104,9 +105,9 @@ const AdminPanelPage = () => {
   // Filter bookings berdasarkan search dan status
   const filteredBookings = bookings.filter(booking => {
     const matchSearch = bookingSearch === '' || 
-      booking.userName.toLowerCase().includes(bookingSearch.toLowerCase()) ||
-      booking.id.toLowerCase().includes(bookingSearch.toLowerCase()) ||
-      booking.email.toLowerCase().includes(bookingSearch.toLowerCase());
+      (booking.userName && booking.userName.toLowerCase().includes(bookingSearch.toLowerCase())) ||
+      (booking.id && booking.id.toLowerCase().includes(bookingSearch.toLowerCase())) ||
+      (booking.email && booking.email.toLowerCase().includes(bookingSearch.toLowerCase()));
     
     const matchStatus = bookingStatusFilter === 'all' || booking.status === bookingStatusFilter;
     
@@ -317,6 +318,9 @@ const AdminPanelPage = () => {
                 color="red"
               />
             </div>
+
+            {/* Booking Charts */}
+            <BookingChart bookings={bookings} />
           </div>
         )}
 

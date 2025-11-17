@@ -1,0 +1,631 @@
+.booking-chart {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.chart-header {
+  margin-bottom: 24px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.chart-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.period-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.period-filter label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+}
+
+.period-filter select {
+  padding: 8px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.period-filter select:hover {
+  border-color: #4CAF50;
+}
+
+.period-filter select:focus {
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.chart-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 16px;
+}
+
+/* Chart Container */
+.chart-container {
+  margin-bottom: 40px;
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Custom Tooltip */
+.custom-tooltip {
+  background: white;
+  padding: 12px 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.custom-tooltip .label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 13px;
+}
+
+.custom-tooltip p {
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+/* Summary Stats */
+.chart-summary {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid #f0f0f0;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  color: white;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-width: 300px;
+}
+
+.summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.summary-icon {
+  font-size: 36px;
+  opacity: 0.9;
+}
+
+.summary-info {
+  flex: 1;
+}
+
+.summary-value {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.summary-label {
+  font-size: 13px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Recharts Customization */
+.recharts-wrapper {
+  margin: 0 auto;
+}
+
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #e0e0e0;
+}
+
+.recharts-legend-wrapper {
+  padding-top: 20px !important;
+}
+
+.recharts-default-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.recharts-legend-item {
+  margin-right: 0 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .booking-chart {
+    padding: 16px;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chart-header h3 {
+    font-size: 18px;
+  }
+
+  .period-filter {
+    width: 100%;
+  }
+
+  .period-filter select {
+    flex: 1;
+  }
+
+  .chart-title {
+    font-size: 14px;
+  }
+
+  .chart-container {
+    padding: 16px;
+    margin-bottom: 30px;
+  }
+
+  .chart-summary {
+    justify-content: center;
+  }
+
+  .summary-card {
+    padding: 16px 20px;
+    min-width: auto;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .summary-icon {
+    font-size: 28px;
+  }
+
+  .summary-value {
+    font-size: 20px;
+  }
+
+  .summary-label {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-chart {
+    padding: 12px;
+  }
+
+  .chart-container {
+    padding: 12px;
+    margin-bottom: 24px;
+  }
+
+  .chart-title {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .summary-card {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .summary-icon {
+    font-size: 24px;
+  }
+
+  .summary-value {
+    font-size: 18px;
+  }
+
+  .summary-label {
+    font-size: 11px;
+  }
+
+  .custom-tooltip {
+    padding: 8px 12px;
+  }
+
+  .custom-tooltip .label {
+    font-size: 12px;
+  }
+
+  .custom-tooltip p {
+    font-size: 11px;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-container {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.chart-container:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.chart-container:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.chart-container:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.chart-container:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+/* Line Chart Styles */
+.chart-container {
+  margin-bottom: 32px;
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 16px;
+}
+
+.chart-grid {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #666;
+  min-width: 40px;
+  text-align: right;
+}
+
+.chart-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-area svg {
+  width: 100%;
+  height: 200px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: linear-gradient(to bottom, #f9f9f9 0%, white 100%);
+  padding: 8px;
+}
+
+.chart-point {
+  cursor: pointer;
+  transition: r 0.2s ease;
+}
+
+.chart-point:hover {
+  r: 5;
+}
+
+.x-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Bar Chart Styles */
+.bar-chart {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  height: 220px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-wrapper {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bar {
+  width: 100%;
+  max-width: 60px;
+  background: linear-gradient(to top, #2196F3, #64B5F6);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8px;
+  min-height: 20px;
+}
+
+.bar:hover {
+  filter: brightness(1.1);
+  transform: translateY(-4px);
+}
+
+.bar-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.bar-label {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Status Distribution Chart */
+.status-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-date {
+  min-width: 60px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.status-bars {
+  flex: 1;
+  display: flex;
+  height: 32px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-width: 30px;
+}
+
+.status-bar span {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.status-bar.confirmed {
+  background: linear-gradient(to right, #4CAF50, #66BB6A);
+}
+
+.status-bar.pending {
+  background: linear-gradient(to right, #FFC107, #FFD54F);
+}
+
+.status-bar.cancelled {
+  background: linear-gradient(to right, #F44336, #EF5350);
+}
+
+.status-bar:hover {
+  filter: brightness(1.1);
+}
+
+.status-total {
+  min-width: 60px;
+  text-align: right;
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.legend-color.confirmed {
+  background: #4CAF50;
+}
+
+.legend-color.pending {
+  background: #FFC107;
+}
+
+.legend-color.cancelled {
+  background: #F44336;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .booking-chart {
+    padding: 16px;
+  }
+
+  .chart-header h3 {
+    font-size: 18px;
+  }
+
+  .chart-title {
+    font-size: 14px;
+  }
+
+  .bar-chart {
+    gap: 8px;
+    padding: 12px;
+    height: 180px;
+  }
+
+  .bar-wrapper {
+    height: 140px;
+  }
+
+  .bar {
+    max-width: 40px;
+  }
+
+  .bar-value {
+    font-size: 10px;
+  }
+
+  .bar-label {
+    font-size: 10px;
+  }
+
+  .status-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .status-bars {
+    width: 100%;
+  }
+
+  .status-total {
+    width: 100%;
+    text-align: left;
+  }
+
+  .chart-legend {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .y-axis {
+    min-width: 30px;
+    font-size: 11px;
+  }
+
+  .x-axis {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-chart {
+    padding: 12px;
+  }
+
+  .chart-area svg {
+    height: 150px;
+  }
+
+  .bar-chart {
+    height: 150px;
+  }
+
+  .bar-wrapper {
+    height: 110px;
+  }
+
+  .status-bars {
+    height: 28px;
+  }
+}
