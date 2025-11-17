@@ -96,10 +96,6 @@ function Navbar() {
                   <span className="dropdown-icon">👤</span>
                   <span>Profile Saya</span>
                 </button>
-                <button className="dropdown-item" onClick={handleMyTicketsClick}>
-                  <span className="dropdown-icon">🎫</span>
-                  <span>Tiket Saya</span>
-                </button>
                 {currentUser?.role === 'admin' && (
                   <>
                     <div className="dropdown-divider"></div>

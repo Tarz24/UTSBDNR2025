@@ -165,13 +165,6 @@ function ProfileUserPage() {
     }
   };
 
-  const handleLogout = () => {
-    if (window.confirm('Apakah Anda yakin ingin logout?')) {
-      // Akan di-handle oleh Navbar
-      navigate('/');
-    }
-  };
-
   // Return early jika belum login atau user belum ada
   if (!isLoggedIn || !currentUser) {
     return null;
@@ -206,9 +199,6 @@ function ProfileUserPage() {
               </button>
               <button className="action-btn password-btn" onClick={handleChangePassword}>
                 🔒 Ganti Password
-              </button>
-              <button className="action-btn logout-btn" onClick={handleLogout}>
-                🚪 Keluar
               </button>
             </div>
           </div>
