@@ -4,6 +4,7 @@ import SearchPage from './pages/SearchPage';
 import MyTicketPage from './pages/MyTicketPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ProfileUserPage from './pages/ProfileUserPage';
 
 function App() {
   return (
@@ -11,8 +12,9 @@ function App() {
       {/* <HomePage /> */}
       {/* <SearchPage /> */}
       {/* <MyTicketPage /> */}
-      <LoginPage />
+      {/* <LoginPage /> */}
       {/* <RegisterPage /> */}
+      <ProfileUserPage />
     </div>
   );
 }
