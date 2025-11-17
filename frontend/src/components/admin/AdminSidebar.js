@@ -1,7 +1,7 @@
 import React from 'react';
 import './AdminSidebar.css';
 
-const AdminSidebar = ({ activeTab, setActiveTab, onLogout }) => {
+const AdminSidebar = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     {
       id: 'dashboard',
@@ -39,13 +39,6 @@ const AdminSidebar = ({ activeTab, setActiveTab, onLogout }) => {
           </button>
         ))}
       </nav>
-
-      <div className="sidebar-footer">
-        <button className="logout-sidebar-btn" onClick={onLogout}>
-          <span className="nav-icon">🚪</span>
-          <span className="nav-label">Logout</span>
-        </button>
-      </div>
     </div>
   );
 };

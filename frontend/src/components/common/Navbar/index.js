@@ -99,9 +99,19 @@ function Navbar() {
                 {currentUser?.role === 'admin' && (
                   <>
                     <div className="dropdown-divider"></div>
-                    <button className="dropdown-item" onClick={() => navigate('/admin')}>
+                    <button className="dropdown-item" onClick={() => {
+                      navigate('/admin');
+                      setShowUserMenu(false);
+                    }}>
                       <span className="dropdown-icon">⚙️</span>
                       <span>Admin Panel</span>
+                    </button>
+                    <button className="dropdown-item" onClick={() => {
+                      navigate('/');
+                      setShowUserMenu(false);
+                    }}>
+                      <span className="dropdown-icon">🏠</span>
+                      <span>Homepage</span>
                     </button>
                   </>
                 )}

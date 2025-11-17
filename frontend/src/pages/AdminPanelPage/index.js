@@ -23,6 +23,7 @@ const AdminPanelPage = () => {
   const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
 
   // State untuk data dari localStorage
   const [schedules, setSchedules] = useState([]);
@@ -114,12 +115,36 @@ const AdminPanelPage = () => {
     return matchSearch && matchStatus;
   });
 
-  const handleLogout = () => {
+  const toggleAdminMenu = () => {
+    setShowAdminMenu(!showAdminMenu);
+  };
+
+  const handleNavigateHome = () => {
+    navigate('/');
+    setShowAdminMenu(false);
+  };
+
+  const handleLogoutAdmin = () => {
     if (window.confirm('Apakah Anda yakin ingin logout?')) {
       logout();
+      setShowAdminMenu(false);
       navigate('/login');
     }
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showAdminMenu && !event.target.closest('.admin-user-info')) {
+        setShowAdminMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAdminMenu]);
 
   const handleAddSchedule = () => {
     setFormData({
@@ -277,15 +302,43 @@ const AdminPanelPage = () => {
       <AdminSidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
-        onLogout={handleLogout}
       />
 
       <div className="admin-content">
         <div className="admin-header">
           <h1>Dashboard Admin</h1>
           <div className="admin-user-info">
-            <span className="admin-name">{currentUser?.namaLengkap || 'Admin'}</span>
-            <button className="logout-btn" onClick={handleLogout}>Logout</button>
+            <button className="admin-user-btn" onClick={toggleAdminMenu}>
+              <span className="admin-user-icon">👤</span>
+              <span className="admin-user-name">{currentUser?.namaLengkap || 'Admin'}</span>
+              <span className="admin-dropdown-icon">{showAdminMenu ? '▲' : '▼'}</span>
+            </button>
+            
+            {showAdminMenu && (
+              <div className="admin-user-dropdown">
+                <div className="admin-dropdown-header">
+                  <span className="admin-dropdown-name">{currentUser?.namaLengkap}</span>
+                  <span className="admin-dropdown-role">Administrator</span>
+                </div>
+                <div className="admin-dropdown-divider"></div>
+                <button className="admin-dropdown-item" onClick={handleNavigateHome}>
+                  <span className="admin-dropdown-item-icon">🏠</span>
+                  <span>Homepage</span>
+                </button>
+                <button className="admin-dropdown-item" onClick={() => {
+                  navigate('/profile');
+                  setShowAdminMenu(false);
+                }}>
+                  <span className="admin-dropdown-item-icon">👤</span>
+                  <span>Profile</span>
+                </button>
+                <div className="admin-dropdown-divider"></div>
+                <button className="admin-dropdown-item logout" onClick={handleLogoutAdmin}>
+                  <span className="admin-dropdown-item-icon">🚪</span>
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
