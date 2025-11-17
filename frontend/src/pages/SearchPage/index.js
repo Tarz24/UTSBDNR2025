@@ -11,7 +11,7 @@ import './SearchPage.css';
 function SearchPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, loading } = useAuth();
+  const { isLoggedIn, loading, addBooking, currentUser } = useAuth();
 
   // Redirect ke login jika belum login
   useEffect(() => {
@@ -140,20 +140,39 @@ function SearchPage() {
       return;
     }
 
-    console.log('Lanjut ke booking:', {
-      jadwalPergi: selectedJadwalPergi,
-      jadwalPulang: selectedJadwalPulang,
-      penumpang: searchParams.penumpang
-    });
+    // Create booking menggunakan addBooking dari AuthContext
+    // Data jadwal pergi (wajib)
+    const bookingDataPergi = {
+      scheduleId: selectedJadwalPergi.originalData.id,
+      origin: selectedJadwalPergi.originalData.origin,
+      destination: selectedJadwalPergi.originalData.destination,
+      date: selectedJadwalPergi.originalData.date,
+      time: selectedJadwalPergi.originalData.time,
+      seats: searchParams.penumpang,
+      price: selectedJadwalPergi.originalData.price,
+      totalPrice: selectedJadwalPergi.originalData.price * searchParams.penumpang
+    };
+
+    // Simpan booking ke localStorage
+    const result = addBooking(bookingDataPergi);
+
+    if (!result.success) {
+      alert(result.message || 'Gagal membuat booking!');
+      return;
+    }
+
+    console.log('Booking created:', result.booking);
 
     // Navigate ke MyTicketPage dengan data booking
     navigate('/my-ticket', {
       state: {
         bookingData: {
+          ...result.booking,
+          // Tambahkan info untuk display
           jadwalPergi: selectedJadwalPergi,
           jadwalPulang: selectedJadwalPulang,
           penumpang: searchParams.penumpang,
-          totalHarga: calculateTotalPrice()
+          isPulangPergi: searchParams.isPulangPergi
         }
       }
     });

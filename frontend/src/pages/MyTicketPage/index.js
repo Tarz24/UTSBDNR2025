@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/common/Navbar';
 import Footer from '../../components/common/Footer';
 import TicketCard from '../../components/TicketCard';
@@ -8,51 +9,70 @@ import './MyTicketPage.css';
 function MyTicketPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isLoggedIn, currentUser, loading } = useAuth();
 
-  // Dummy data tiket yang baru saja di-submit (nanti akan diterima dari BookingPage via routing)
-  const [ticket] = useState({
-    _id: '1',
-    kodePemesanan: 'BRY20241117001',
-    status: 'confirmed',
-    tanggalPemesanan: '2024-11-17T10:30:00',
-    jadwalPergi: {
-      _id: 'j1',
-      kotaAsal: 'Surabaya',
-      kotaTujuan: 'Jakarta',
-      tanggalKeberangkatan: '2024-11-20T08:00:00',
-      jamKeberangkatan: '08:00',
-      jamKedatangan: '16:00',
-      harga: 250000,
-      kursiTersedia: 30,
-      totalKursi: 45,
-      armada: 'Executive A'
-    },
-    jadwalPulang: {
-      _id: 'j2',
-      kotaAsal: 'Jakarta',
-      kotaTujuan: 'Surabaya',
-      tanggalKeberangkatan: '2024-11-25T09:00:00',
-      jamKeberangkatan: '09:00',
-      jamKedatangan: '17:00',
-      harga: 250000,
-      kursiTersedia: 25,
-      totalKursi: 45,
-      armada: 'Executive B'
-    },
-    jumlahPenumpang: 2,
-    totalHarga: 1000000,
-    namaPenumpang: 'Budi Santoso',
-    noHpPenumpang: '081234567890',
-    emailPenumpang: 'budi.santoso@email.com'
-  });
+  // State untuk ticket
+  const [ticket, setTicket] = useState(null);
 
-  // Ambil data booking dari navigation state (jika ada)
+  // Redirect ke login jika belum login
+  useEffect(() => {
+    if (!loading && !isLoggedIn) {
+      alert('Anda harus login terlebih dahulu!');
+      navigate('/login', { 
+        state: { 
+          from: location.pathname,
+          message: 'Silakan login terlebih dahulu untuk melihat tiket' 
+        } 
+      });
+    }
+  }, [isLoggedIn, loading, navigate, location.pathname]);
+
+  // Ambil data booking dari navigation state dan transform untuk TicketCard
   useEffect(() => {
     if (location.state?.bookingData) {
-      console.log('Booking data received:', location.state.bookingData);
-      // Nanti akan set ticket dari bookingData
+      const bookingData = location.state.bookingData;
+      console.log('Booking data received:', bookingData);
+      
+      // Transform data untuk format yang diharapkan TicketCard
+      const transformedTicket = {
+        _id: bookingData.id,
+        kodePemesanan: bookingData.id,
+        status: bookingData.status,
+        tanggalPemesanan: bookingData.bookingDate,
+        jadwalPergi: {
+          _id: bookingData.scheduleId,
+          kotaAsal: bookingData.origin,
+          kotaTujuan: bookingData.destination,
+          tanggalKeberangkatan: `${bookingData.date}T${bookingData.time}:00`,
+          jamKeberangkatan: bookingData.time,
+          jamKedatangan: '-', // Tidak ada data kedatangan di localStorage
+          harga: bookingData.price,
+          kursiTersedia: bookingData.jadwalPergi?.kursiTersedia || 0,
+          totalKursi: bookingData.jadwalPergi?.totalKursi || 0,
+          armada: bookingData.jadwalPergi?.pool || 'Travel'
+        },
+        jadwalPulang: bookingData.isPulangPergi && bookingData.jadwalPulang ? {
+          _id: bookingData.jadwalPulang.id,
+          kotaAsal: bookingData.jadwalPulang.dari,
+          kotaTujuan: bookingData.jadwalPulang.tujuan,
+          tanggalKeberangkatan: bookingData.jadwalPulang.tanggal,
+          jamKeberangkatan: bookingData.jadwalPulang.jam,
+          jamKedatangan: '-',
+          harga: bookingData.jadwalPulang.harga,
+          kursiTersedia: bookingData.jadwalPulang.kursiTersedia,
+          totalKursi: bookingData.jadwalPulang.totalKursi,
+          armada: bookingData.jadwalPulang.pool
+        } : null,
+        jumlahPenumpang: bookingData.seats,
+        totalHarga: bookingData.totalPrice,
+        namaPenumpang: currentUser?.namaLengkap,
+        noHpPenumpang: currentUser?.noHp,
+        emailPenumpang: currentUser?.email
+      };
+      
+      setTicket(transformedTicket);
     }
-  }, [location.state]);
+  }, [location.state, currentUser]);
 
   const handleDownloadTicket = () => {
     // Nanti akan implement download PDF
@@ -73,6 +93,11 @@ function MyTicketPage() {
   const handleViewAllTickets = () => {
     navigate('/profile');
   };
+
+  // Return early jika belum login atau masih loading
+  if (loading || !isLoggedIn || !ticket) {
+    return null;
+  }
 
   return (
     <div className="my-ticket-page">
@@ -105,11 +130,11 @@ function MyTicketPage() {
         <div className="additional-info">
           <div className="info-card">
             <h3>📧 E-Ticket Terkirim</h3>
-            <p>E-ticket telah dikirim ke email <strong>{ticket.emailPenumpang}</strong></p>
+            <p>E-ticket telah dikirim ke email <strong>{currentUser.email}</strong></p>
           </div>
           <div className="info-card">
             <h3>📱 Notifikasi WhatsApp</h3>
-            <p>Konfirmasi juga dikirim ke nomor <strong>{ticket.noHpPenumpang}</strong></p>
+            <p>Konfirmasi juga dikirim ke nomor <strong>{currentUser.noHp}</strong></p>
           </div>
         </div>
 
