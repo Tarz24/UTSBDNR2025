@@ -1,0 +1,60 @@
+/* ========== JADWAL SECTION ========== */
+.jadwal-section {
+  padding: 4rem 2rem;
+  background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+}
+
+.jadwal-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #333;
+  margin-bottom: 3rem;
+}
+
+.jadwal-carousel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* ========== CAROUSEL NAVIGATION ========== */
+.carousel-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.carousel-btn {
+  background: #7B1FA2;
+  color: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(123, 31, 162, 0.3);
+}
+
+.carousel-btn:hover {
+  background: #6A1B9A;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(123, 31, 162, 0.4);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .jadwal-carousel {
+    grid-template-columns: 1fr;
+  }
+}

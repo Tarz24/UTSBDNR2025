@@ -1,0 +1,7 @@
+﻿/* ========== HOME PAGE CONTAINER ========== */
+.home-page {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  position: relative;
+  background-color: #f5f5f5;
+}
