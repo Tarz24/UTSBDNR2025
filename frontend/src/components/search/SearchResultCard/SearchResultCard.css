@@ -1,0 +1,201 @@
+/* ========== SEARCH RESULT CARD ========== */
+.search-result-card {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.search-result-card:hover {
+  border-color: #7B1FA2;
+  box-shadow: 0 5px 20px rgba(123, 31, 162, 0.15);
+  transform: translateY(-2px);
+}
+
+.search-result-card.selected {
+  border-color: #7B1FA2;
+  background: linear-gradient(to right, #f3e5f5 0%, white 100%);
+  box-shadow: 0 5px 20px rgba(123, 31, 162, 0.2);
+}
+
+/* ========== CARD HEADER ========== */
+.result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.route-info-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location-icon {
+  font-size: 1.3rem;
+}
+
+.location-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.route-arrow {
+  font-size: 1.5rem;
+  color: #7B1FA2;
+  font-weight: 700;
+}
+
+.pool-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+
+.pool-label {
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+.pool-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+  background: #f0f0f0;
+  padding: 0.3rem 0.8rem;
+  border-radius: 8px;
+}
+
+/* ========== CARD BODY ========== */
+.result-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.schedule-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.info-icon {
+  font-size: 1.5rem;
+}
+
+.info-label {
+  font-size: 0.85rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+/* ========== CARD FOOTER ========== */
+.result-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 2px solid #f0f0f0;
+}
+
+.price-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.price-label {
+  font-size: 0.85rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.price-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #2E7D32;
+}
+
+.btn-select {
+  background: linear-gradient(135deg, #7B1FA2 0%, #9C27B0 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(123, 31, 162, 0.3);
+}
+
+.btn-select:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(123, 31, 162, 0.4);
+}
+
+.btn-select.selected {
+  background: linear-gradient(135deg, #2E7D32 0%, #388E3C 100%);
+  box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .result-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .route-info-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .pool-info {
+    align-items: flex-start;
+  }
+  
+  .schedule-info {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .result-card-footer {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .btn-select {
+    width: 100%;
+  }
+}
