@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './RegisterPage.css';
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const { register, isLoggedIn } = useAuth();
   
   const [formData, setFormData] = useState({
     namaLengkap: '',
@@ -18,6 +20,15 @@ function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+  const [registerSuccess, setRegisterSuccess] = useState(false);
+
+  // Redirect jika sudah login
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate('/');
+    }
+  }, [isLoggedIn, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,6 +42,10 @@ function RegisterPage() {
         ...prev,
         [name]: ''
       }));
+    }
+    // Clear register error
+    if (registerError) {
+      setRegisterError('');
     }
   };
 
@@ -89,19 +104,37 @@ function RegisterPage() {
     }
 
     setIsLoading(true);
+    setRegisterError('');
 
-    // Simulasi API call (nanti akan diganti dengan API real)
-    setTimeout(() => {
-      console.log('Register data:', {
-        namaLengkap: formData.namaLengkap,
-        email: formData.email,
-        noHp: formData.noHp
-      });
-      alert('Pendaftaran berhasil! Silakan login dengan akun Anda.');
+    // Gunakan AuthContext register
+    const result = register({
+      namaLengkap: formData.namaLengkap,
+      email: formData.email,
+      noHp: formData.noHp,
+      password: formData.password
+    });
+
+    if (result.success) {
+      // Register berhasil
+      console.log('✅ Registration successful!');
+      setRegisterSuccess(true);
+      
+      // Tampilkan success message lalu redirect ke login
+      setTimeout(() => {
+        setIsLoading(false);
+        navigate('/login', { 
+          state: { 
+            message: 'Pendaftaran berhasil! Silakan login dengan akun Anda.',
+            email: formData.email 
+          } 
+        });
+      }, 1500);
+    } else {
+      // Register gagal
       setIsLoading(false);
-      // Navigate ke LoginPage setelah register sukses
-      navigate('/login');
-    }, 2000);
+      setRegisterError(result.message);
+      console.error('❌ Registration failed:', result.message);
+    }
   };
 
   const handleLoginRedirect = () => {
@@ -157,6 +190,22 @@ function RegisterPage() {
               <h2>Buat Akun</h2>
               <p>Lengkapi data diri Anda untuk mendaftar</p>
             </div>
+
+            {/* Success Message */}
+            {registerSuccess && (
+              <div className="alert alert-success">
+                <span className="alert-icon">✅</span>
+                <span>Pendaftaran berhasil! Mengalihkan ke halaman login...</span>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {registerError && (
+              <div className="alert alert-error">
+                <span className="alert-icon">⚠️</span>
+                <span>{registerError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="register-form">
               {/* Nama Lengkap */}

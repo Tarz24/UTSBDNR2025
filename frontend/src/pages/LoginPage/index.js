@@ -1,18 +1,40 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './LoginPage.css';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isLoggedIn } = useAuth();
   
   const [formData, setFormData] = useState({
-    email: '',
+    email: location.state?.email || '',
     password: ''
   });
 
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
+
+  // Redirect jika sudah login
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate('/');
+    }
+  }, [isLoggedIn, navigate]);
+
+  // Clear success message setelah 5 detik
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,6 +48,10 @@ function LoginPage() {
         ...prev,
         [name]: ''
       }));
+    }
+    // Clear login error
+    if (loginError) {
+      setLoginError('');
     }
   };
 
@@ -58,15 +84,31 @@ function LoginPage() {
     }
 
     setIsLoading(true);
+    setLoginError('');
 
-    // Simulasi API call (nanti akan diganti dengan API real)
-    setTimeout(() => {
-      console.log('Login data:', formData);
-      alert('Login berhasil! (Dummy - belum terintegrasi backend)');
+    // Gunakan AuthContext login
+    const result = login(formData.email, formData.password);
+
+    if (result.success) {
+      // Login berhasil
+      console.log('✅ Login successful!', result.user);
+      
+      // Tampilkan pesan sukses
+      setTimeout(() => {
+        setIsLoading(false);
+        // Redirect berdasarkan role
+        if (result.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+      }, 500);
+    } else {
+      // Login gagal
       setIsLoading(false);
-      // Navigate ke HomePage setelah login sukses
-      navigate('/');
-    }, 1500);
+      setLoginError(result.message);
+      console.error('❌ Login failed:', result.message);
+    }
   };
 
   const handleRegisterRedirect = () => {
@@ -117,6 +159,22 @@ function LoginPage() {
               <h2>Masuk</h2>
               <p>Silakan masuk dengan akun Anda</p>
             </div>
+
+            {/* Success Message */}
+            {successMessage && (
+              <div className="alert alert-success">
+                <span className="alert-icon">✅</span>
+                <span>{successMessage}</span>
+              </div>
+            )}
+
+            {/* Login Error Message */}
+            {loginError && (
+              <div className="alert alert-error">
+                <span className="alert-icon">⚠️</span>
+                <span>{loginError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="login-form">
               {/* Email Input */}
@@ -187,6 +245,19 @@ function LoginPage() {
                 )}
               </button>
             </form>
+
+            {/* Demo Accounts Info */}
+            <div className="demo-info">
+              <p className="demo-title">🔑 Demo Accounts:</p>
+              <div className="demo-accounts">
+                <div className="demo-account">
+                  <strong>User:</strong> ahmad@email.com / password123
+                </div>
+                <div className="demo-account">
+                  <strong>Admin:</strong> admin@baraya.com / admin123
+                </div>
+              </div>
+            </div>
 
             {/* Register Link */}
             <div className="form-footer">

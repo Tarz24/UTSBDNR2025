@@ -135,6 +135,45 @@
   color: #666;
 }
 
+/* Alert Styles */
+.alert {
+  padding: 14px 18px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+  background-color: #fee;
+  color: #c33;
+  border: 1px solid #fcc;
+}
+
+.alert-icon {
+  font-size: 18px;
+}
+
 /* Form Styles */
 .login-form {
   display: flex;
@@ -265,6 +304,42 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Demo Info */
+.demo-info {
+  margin-top: 25px;
+  padding: 16px;
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+
+.demo-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0369a1;
+  margin-bottom: 10px;
+}
+
+.demo-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.demo-account {
+  font-size: 12px;
+  color: #0c4a6e;
+  font-family: 'Courier New', monospace;
+  background-color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.demo-account strong {
+  color: #0369a1;
+  margin-right: 8px;
 }
 
 /* Form Footer */
