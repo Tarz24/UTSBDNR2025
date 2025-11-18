@@ -2,6 +2,7 @@
 // Kasyful Haq B.
 // 17 November 2025
 
+// Setup awal untuk koneksi pada mongo atlas
 require('dotenv').config();
 const express = require('express');
 const app = express();
@@ -11,19 +12,21 @@ const port = 3000;
 
 const MONGODB_URL = process.env.MONGODB_URL;
 
+// route jadwal
 app.use('/api', jadwalRouter);
 
+// coba untuk koneksi ke mongo atlas
 mongoose.connect(MONGODB_URL)
     .then(() => {
         console.log('✅ MongoDB Connected Successfully!');
         
-        // ONLY START THE SERVER AFTER THE DB IS CONNECTED
+        // Mulai hanya jika sudah sukses melakukan koneksi pada database
         app.listen(port, () => {
             console.log(`Example app listening at http://localhost:${port}`);
         });
     })
     .catch((err) => {
         console.error('❌ MongoDB connection error:', err.message);
-        // Optionally, exit the process if the connection fails
+        // exit jika gagal
         process.exit(1); 
     });
