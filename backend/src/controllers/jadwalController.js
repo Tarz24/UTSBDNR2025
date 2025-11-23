@@ -48,5 +48,30 @@ const createJadwal = async (req, res) => {
     }
 }
 
-module.exports = { getJadwal, createJadwal };
+const updateJadwal = async (req, res) => {
+    // Ekstraksi dari id
+    const id = req.params.id;
+    const update_data = req.body;
+
+    try{
+        const updatedDocument = await JadwalModel.findByIdAndUpdate(
+            id, update_data, { new: true, runValidators: true }
+        );
+
+        if(updatedDocument){
+            res.status(200).json(updatedDocument);
+        }else{
+            res(404).json({ message: "Jadwal tidak ditemukan" });
+        }
+    }catch(error){
+        console.error("Error mmengubah jadwal:", error);
+        res.status(500).json({
+            message: "Internal server error, tidak bisa ubah jadwal",
+            details: error.message
+        });
+    }
+
+}
+
+module.exports = { getJadwal, createJadwal, updateJadwal };
 
