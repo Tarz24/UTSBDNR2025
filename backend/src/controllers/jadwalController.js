@@ -72,8 +72,27 @@ const updateJadwal = async (req, res) => {
             details: error.message
         });
     }
-
 }
 
-module.exports = { getJadwal, createJadwal, updateJadwal };
+const deleteJadwal = async (req, res) => {
+    const idParameter = req.params.id;
+
+    try{
+        const deletedDocument = await JadwalModel.findByIdAndDelete(idParameter);
+
+        if(deletedDocument){
+            res.status(204).send();
+        }else{
+            res(404).json({ message: "Jadwal tidak ditemukan" });
+        }
+    }catch (error){
+        console.error("Error mmengubah jadwal:", error);
+        res.status(500).json({
+            message: "Internal server error, tidak bisa delete jadwal   ",
+            details: error.message
+        });
+    }
+}
+
+module.exports = { getJadwal, createJadwal, updateJadwal, deleteJadwal };
 

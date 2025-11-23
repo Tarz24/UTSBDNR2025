@@ -6,7 +6,7 @@ const { body } = require('express-validator');
 const express = require('express');
 const router = require('express').Router();
 
-const { getJadwal, createJadwal, updateJadwal } = require('../controllers/jadwalController');
+const { getJadwal, createJadwal, updateJadwal, deleteJadwal } = require('../controllers/jadwalController');
 
 // Route handler untuk model 'jadwal'
 // get / read
@@ -19,5 +19,8 @@ body('total_kursi').isInt().notEmpty(), body('kursi_tersedia').isInt().notEmpty(
 
 // patch / update
 router.patch('/jadwal/:id', updateJadwal);
+
+// delete
+router.delete('/jadwal/:id', deleteJadwal);
 
 module.exports = router;
