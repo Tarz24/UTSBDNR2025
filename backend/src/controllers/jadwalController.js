@@ -6,20 +6,22 @@ const { body, validationResult } = require('express-validator');
 const JadwalModel = require('../models/Jadwal');
 
 const getJadwal = async (req, res) => {
-    // 1. Logic to extract data from req
-    const rute_awal = req.query.rute_awal;
-    const rute_tujuan = req.query.rute_tujuan;
-    const jam_berangkat = req.query.jam_berangkat;
+    try{
+        // Ambil data berdasarkan filter yang ada
+        const filter = {}; // Default adalah object kosong untuk mengambil semua data
 
-    // 2. Logic to talk to the database
-    const jadwal = await JadwalModel.find({
-        rute_awal: rute_awal,
-        rute_tujuan: rute_tujuan,
-        jam_berangkat: jam_berangkat
-    });
+        // Kirim query untuk semua document yang sesuai dengan filter
+        const semuaJadwal = await JadwalModel.find(filter);
 
-    // 3. Logic to send the response
-    res.json(jadwal);
+        // Kirim response dalam bentuk json
+        res.status(200).json(semuaJadwal);
+    }catch (error){ 
+        console.error("Error mengambil data jadwal:", error);
+        res.status(500).json({
+            message: "Internal server error, tidak bisa mengambil data jadwal.",
+            details: error.message
+        })
+    }
 };
 
 const createJadwal = async (req, res) => {
