@@ -8,7 +8,7 @@ const JadwalModel = require('../models/Jadwal');
 const getJadwal = async (req, res) => {
     try{
         // Ambil data berdasarkan filter yang ada
-        const filter = {}; // Default adalah object kosong untuk mengambil semua data
+        const filter = req.query; // Default adalah object kosong untuk mengambil semua data
 
         // Kirim query untuk semua document yang sesuai dengan filter
         const semuaJadwal = await JadwalModel.find(filter);
