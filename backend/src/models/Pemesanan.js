@@ -39,6 +39,12 @@ const pemesananSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'success', 'cancelled'], // Hanya boleh diisi 3 nilai ini
     default: 'pending'
+  },
+  // Human-friendly booking lifecycle status used by frontend
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+    default: 'pending'
   }
 }, {
   timestamps: true

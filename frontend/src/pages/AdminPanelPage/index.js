@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
-import { fetchAllSchedules, getAllBookings, addSchedule, updateSchedule, deleteSchedule, updateBookingStatus } from "../../utils/dataManager"
+import { fetchAllSchedules, getAllBookings, addSchedule, updateSchedule, deleteSchedule, updateBookingStatus, getAllUsers } from "../../utils/dataManager"
 import AdminSidebar from "../../components/admin/AdminSidebar"
 import StatCard from "../../components/admin/StatCard"
 import BookingChart from "../../components/admin/BookingChart"
@@ -46,13 +46,20 @@ const AdminPanelPage = () => {
     // Load schedules from backend API (falls back to empty array on error)
     const schedulesData = await fetchAllSchedules()
     setSchedules(schedulesData || [])
+    // load users (try API first, then fallback)
+    try {
+      const u = await getAllUsers()
+      setUsers(u || [])
+    } catch (e) {
+      setUsers([])
+    }
 
-    // Load bookings (still from localStorage for now)
-    const bookingsData = getAllBookings()
+    // Load bookings from API (dataManager.getAllBookings is async now)
+    const bookingsData = await getAllBookings()
     setBookings(bookingsData)
 
     // Calculate statistics
-    const totalRevenue = bookingsData.filter(b => b.status === "confirmed" || b.status === "completed").reduce((sum, b) => sum + b.totalPrice, 0)
+    const totalRevenue = bookingsData.filter(b => b.status === "confirmed" || b.status === "completed").reduce((sum, b) => sum + (b.totalPrice || 0), 0)
 
     const pendingCount = bookingsData.filter(b => b.status === "pending").length
 
@@ -77,6 +84,19 @@ const AdminPanelPage = () => {
   // State untuk search dan filter bookings
   const [bookingSearch, setBookingSearch] = useState("")
   const [bookingStatusFilter, setBookingStatusFilter] = useState("all")
+  const [users, setUsers] = useState([])
+  const [showAddBookingModal, setShowAddBookingModal] = useState(false)
+  const [bookingForm, setBookingForm] = useState({
+    userId: "",
+    userName: "",
+    email: "",
+    phone: "",
+    scheduleId: "",
+    seats: 1,
+    seatNumbers: "",
+    totalPrice: 0,
+    status: "pending",
+  })
 
   // State untuk search dan filter schedules
   const [scheduleSearch, setScheduleSearch] = useState("")
@@ -169,6 +189,31 @@ const AdminPanelPage = () => {
   const handleDeleteSchedule = schedule => {
     setSelectedSchedule(schedule)
     setShowDeleteConfirm(true)
+  }
+
+  const openAddBooking = () => {
+    setBookingForm({ userId: "", userName: "", email: "", phone: "", scheduleId: "", seats: 1, seatNumbers: "", totalPrice: 0, status: "pending" })
+    setShowAddBookingModal(true)
+  }
+
+  const handleBookingInputChange = e => {
+    const { name, value } = e.target
+    setBookingForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  const submitBooking = async e => {
+    e.preventDefault()
+    const payload = {
+      userId: bookingForm.userId || undefined,
+      userName: bookingForm.userName,
+      email: bookingForm.email,
+      phone: bookingForm.phone,
+      scheduleId: bookingForm.scheduleId,
+      seats: Number(bookingForm.seats),
+      nomor_kursi: bookingForm.seatNumbers ? bookingForm.seatNumbers.split(/\s*,\s*/g) : [],
+      totalPrice: Number(bookingForm.totalPrice),
+      status: bookingForm.status,
+    }
   }
 
   const confirmDelete = () => {
@@ -295,11 +340,11 @@ const AdminPanelPage = () => {
     return <span className={`status-badge ${config.className}`}>{config.label}</span>
   }
 
-  const handleUpdateBookingStatus = (bookingId, newStatus) => {
-    const result = updateBookingStatus(bookingId, newStatus)
+  const handleUpdateBookingStatus = async (bookingId, newStatus) => {
+    const result = await updateBookingStatus(bookingId, newStatus)
 
     if (result.success) {
-      loadData() // Reload data dari localStorage
+      await loadData()
       alert(`Status booking berhasil diubah menjadi ${newStatus}!`)
     } else {
       alert(result.message || "Gagal mengubah status booking!")
@@ -455,6 +500,9 @@ const AdminPanelPage = () => {
           <div className="bookings-section">
             <div className="section-header">
               <h2>Manajemen Pemesanan</h2>
+              <button className="add-btn" onClick={openAddBooking}>
+                + Tambah Pemesanan
+              </button>
             </div>
 
             {/* Search and Filter Bar */}
@@ -689,6 +737,95 @@ const AdminPanelPage = () => {
                 Hapus
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Booking Modal */}
+      {showAddBookingModal && (
+        <div className="modal-overlay" onClick={() => setShowAddBookingModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Tambah Pemesanan</h3>
+              <button className="close-modal" onClick={() => setShowAddBookingModal(false)}>
+                ×
+              </button>
+            </div>
+            <form onSubmit={submitBooking}>
+              <div className="form-group">
+                <label>Pilih User</label>
+                <select name="userId" value={bookingForm.userId} onChange={handleBookingInputChange}>
+                  <option value="">-- Pilih User (atau kosong untuk input manual) --</option>
+                  {users.map(u => (
+                    <option key={u.id || u._id} value={u.id || u._id}>
+                      {u.namaLengkap || u.nama || u.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Nama Pemesan</label>
+                  <input type="text" name="userName" value={bookingForm.userName} onChange={handleBookingInputChange} placeholder="Nama lengkap" />
+                </div>
+                <div className="form-group">
+                  <label>Email</label>
+                  <input type="email" name="email" value={bookingForm.email} onChange={handleBookingInputChange} placeholder="email@example.com" />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Nomor HP</label>
+                <input type="text" name="phone" value={bookingForm.phone} onChange={handleBookingInputChange} placeholder="08xxxx" />
+              </div>
+
+              <div className="form-group">
+                <label>Pilih Jadwal</label>
+                <select name="scheduleId" value={bookingForm.scheduleId} onChange={handleBookingInputChange} required>
+                  <option value="">-- Pilih Jadwal --</option>
+                  {schedules.map(s => (
+                    <option key={s._id || s.id} value={s._id || s.id}>{`${s.id || s._id} — ${s.origin} → ${s.destination} (${s.date} ${s.time})`}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Jumlah Kursi</label>
+                  <input type="number" name="seats" value={bookingForm.seats} onChange={handleBookingInputChange} min="1" required />
+                </div>
+                <div className="form-group">
+                  <label>Nomor Kursi (pisah koma)</label>
+                  <input type="text" name="seatNumbers" value={bookingForm.seatNumbers} onChange={handleBookingInputChange} placeholder="A1, A2" />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Total Harga</label>
+                  <input type="number" name="totalPrice" value={bookingForm.totalPrice} onChange={handleBookingInputChange} min="0" />
+                </div>
+                <div className="form-group">
+                  <label>Status</label>
+                  <select name="status" value={bookingForm.status} onChange={handleBookingInputChange}>
+                    <option value="pending">pending</option>
+                    <option value="confirmed">confirmed</option>
+                    <option value="cancelled">cancelled</option>
+                    <option value="completed">completed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="cancel-btn" onClick={() => setShowAddBookingModal(false)}>
+                  Batal
+                </button>
+                <button type="submit" className="submit-btn">
+                  Buat Pemesanan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

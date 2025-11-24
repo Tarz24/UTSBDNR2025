@@ -293,12 +293,54 @@ export const fetchAllSchedules = async () => {
   }
 }
 
-// Get all bookings
-export const getAllBookings = () => {
+// Get all bookings (try API first, fallback to localStorage)
+export const getAllBookings = async () => {
+  const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
+
+  try {
+    const res = await fetch(`${base}/pemesanan`)
+    if (res.ok) {
+      const data = await res.json()
+      if (Array.isArray(data)) {
+        return data.map(item => {
+          // map backend pemesanan shape to frontend booking shape
+          const user = item.user || {}
+          const jadwal = item.jadwal || {}
+          const tanggal = item.tanggal_pesan || item.bookingDate || item.createdAt || null
+          const dateStr = tanggal ? new Date(tanggal).toISOString().split("T")[0] : item.date || ""
+          const timeStr = jadwal.jam_berangkat ? new Date(jadwal.jam_berangkat).toTimeString().slice(0, 5) : item.time || ""
+
+          return {
+            id: item.kode_booking || (item.id && String(item.id)) || item._id,
+            userId: user._id || item.userId || null,
+            userName: user.namaLengkap || user.nama || item.userName || user.name || "",
+            email: user.email || item.userEmail || "",
+            phone: user.noHp || item.userPhone || "",
+            scheduleId: jadwal._id || item.jadwal || item.scheduleId || item.schedule_id,
+            origin: jadwal.rute_awal || item.origin || "",
+            destination: jadwal.rute_tujuan || item.destination || "",
+            date: dateStr,
+            time: timeStr,
+            seats: item.jumlah_penumpang || item.seats || 0,
+            price: item.total_harga || item.price || 0,
+            totalPrice: item.total_harga || item.totalPrice || 0,
+            status: item.status || item.status_pembayaran || "pending",
+            bookingDate: tanggal,
+          }
+        })
+      }
+    } else {
+      console.warn("getAllBookings API returned", res.status)
+    }
+  } catch (error) {
+    console.warn("Error fetching bookings from API:", error)
+  }
+
+  // fallback to localStorage
   try {
     return JSON.parse(localStorage.getItem("bookings") || "[]")
   } catch (error) {
-    console.error("Error getting bookings:", error)
+    console.error("Error getting bookings (fallback):", error)
     return []
   }
 }
@@ -543,22 +585,53 @@ export const addSchedule = async scheduleData => {
 }
 
 // Update booking status
-export const updateBookingStatus = (bookingId, newStatus) => {
-  try {
-    const bookings = getAllBookings()
-    const index = bookings.findIndex(b => b.id === bookingId)
+export const updateBookingStatus = async (bookingId, newStatus) => {
+  const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
 
+  // Use backend convenience endpoints when possible
+  try {
+    let url
+    if (newStatus === "confirmed") url = `${base}/pemesanan/${bookingId}/confirm`
+    else if (newStatus === "cancelled") url = `${base}/pemesanan/${bookingId}/cancel`
+    else if (newStatus === "completed") url = `${base}/pemesanan/${bookingId}/complete`
+    else url = `${base}/pemesanan/${bookingId}/status`
+
+    const body = url.endsWith("/status") ? JSON.stringify({ status: newStatus }) : undefined
+
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body,
+    })
+
+    const respBody = await (async () => {
+      try {
+        return await res.json()
+      } catch (e) {
+        return null
+      }
+    })()
+
+    if (res.ok) {
+      return { success: true, message: "Status booking berhasil diupdate (API)", booking: respBody }
+    }
+  } catch (apiError) {
+    console.warn("API updateBookingStatus failed, falling back to localStorage:", apiError)
+  }
+
+  // Fallback to localStorage update
+  try {
+    const bookings = JSON.parse(localStorage.getItem("bookings") || "[]")
+    const index = bookings.findIndex(b => b.id === bookingId)
     if (index === -1) {
       return { success: false, message: "Booking tidak ditemukan!" }
     }
-
     bookings[index].status = newStatus
     bookings[index].updatedAt = new Date().toISOString()
-
     localStorage.setItem("bookings", JSON.stringify(bookings))
-    return { success: true, message: "Status booking berhasil diupdate!" }
+    return { success: true, message: "Status booking berhasil diupdate! (local fallback)", booking: bookings[index] }
   } catch (error) {
-    console.error("Error updating booking status:", error)
+    console.error("Error updating booking status (fallback):", error)
     return { success: false, message: "Terjadi kesalahan saat update status" }
   }
 }
