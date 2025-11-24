@@ -9,6 +9,7 @@ const app = express()
 const mongoose = require("mongoose")
 const jadwalRouter = require("./src/routes/jadwalRoutes")
 const pemesananRouter = require("./src/routes/pemesananRoutes")
+const userRouter = require("./src/routes/userRoutes")
 const port = 3000
 
 const MONGODB_URL = process.env.MONGODB_URL
@@ -28,6 +29,7 @@ app.use(express.json())
 
 app.use("/api", jadwalRouter)
 app.use("/api", pemesananRouter)
+app.use("/api", userRouter)
 
 // coba untuk koneksi ke mongo atlas
 mongoose

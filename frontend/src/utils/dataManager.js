@@ -382,6 +382,100 @@ export const getScheduleById = scheduleId => {
   return schedules.find(schedule => schedule.id === scheduleId)
 }
 
+// Create or get user in MongoDB by email
+// This ensures user exists in MongoDB before creating a booking
+export const ensureUserInMongoDB = async (userLocalData) => {
+  const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
+  
+  console.log("[ensureUserInMongoDB] User data from localStorage:", userLocalData)
+  
+  try {
+    // Check if user already has _id (already in MongoDB)
+    if (userLocalData._id) {
+      console.log("[ensureUserInMongoDB] User already has _id:", userLocalData._id)
+      return { success: true, userId: userLocalData._id }
+    }
+    
+    // Try to find user by email in MongoDB
+    console.log("[ensureUserInMongoDB] Searching for user by email:", userLocalData.email)
+    
+    const searchRes = await fetch(`${base}/users?email=${encodeURIComponent(userLocalData.email)}`)
+    console.log("[ensureUserInMongoDB] Search response status:", searchRes.status)
+    
+    if (!searchRes.ok) {
+      const errorText = await searchRes.text()
+      console.error("[ensureUserInMongoDB] Search failed:", searchRes.status, errorText)
+      return { success: false, message: `API error: ${searchRes.status}` }
+    }
+    
+    const responseText = await searchRes.text()
+    console.log("[ensureUserInMongoDB] Raw response:", responseText)
+    
+    let users
+    try {
+      users = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error("[ensureUserInMongoDB] Failed to parse JSON:", parseError)
+      console.error("[ensureUserInMongoDB] Response text:", responseText)
+      return { success: false, message: `Failed to parse response: ${parseError.message}` }
+    }
+    
+    if (users && Array.isArray(users) && users.length > 0) {
+      console.log("[ensureUserInMongoDB] ✅ User found in MongoDB:", users[0])
+      return { success: true, userId: users[0]._id }
+    }
+    
+    console.log("[ensureUserInMongoDB] User not found, creating new user...")
+    
+    // User not found, create new user in MongoDB
+    const payload = {
+      nama: userLocalData.namaLengkap || userLocalData.nama,
+      email: userLocalData.email,
+      password: userLocalData.password || "defaultPassword123", // Default password
+      no_hp: userLocalData.noHp || userLocalData.no_hp,
+      role: userLocalData.role || "user"
+    }
+    
+    console.log("[ensureUserInMongoDB] Creating new user with payload:", payload)
+    
+    const createRes = await fetch(`${base}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    
+    console.log("[ensureUserInMongoDB] Create response status:", createRes.status)
+    
+    if (!createRes.ok) {
+      const errorText = await createRes.text()
+      console.error("[ensureUserInMongoDB] Create failed:", createRes.status, errorText)
+      return { success: false, message: `Failed to create user: ${createRes.status}` }
+    }
+    
+    const createText = await createRes.text()
+    console.log("[ensureUserInMongoDB] Create raw response:", createText)
+    
+    let createBody
+    try {
+      createBody = JSON.parse(createText)
+    } catch (parseError) {
+      console.error("[ensureUserInMongoDB] Failed to parse create response:", parseError)
+      return { success: false, message: `Failed to parse create response: ${parseError.message}` }
+    }
+    
+    if (createBody._id) {
+      console.log("[ensureUserInMongoDB] ✅ User created successfully:", createBody._id)
+      return { success: true, userId: createBody._id }
+    } else {
+      console.error("[ensureUserInMongoDB] ❌ Failed to create user:", createBody)
+      return { success: false, message: createBody.message || "Failed to create user in MongoDB" }
+    }
+  } catch (error) {
+    console.error("[ensureUserInMongoDB] ❌ Exception:", error)
+    return { success: false, message: `Error: ${error.message}` }
+  }
+}
+
 // Update schedule
 export const updateSchedule = async (scheduleId, updates) => {
   // If scheduleId is not a MongoDB ObjectId, skip calling API and update localStorage
@@ -594,6 +688,77 @@ export const addSchedule = async scheduleData => {
   }
 }
 
+// Add new booking to MongoDB
+export const addBooking = async (bookingData) => {
+  const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
+  
+  console.log("[addBooking] Starting with data:", bookingData)
+  
+  try {
+    // Validate required fields
+    if (!bookingData.user || !bookingData.jadwal) {
+      return { success: false, message: "User dan Jadwal harus diisi!" }
+    }
+    
+    if (!bookingData.seats || bookingData.seats < 1) {
+      return { success: false, message: "Jumlah penumpang harus minimal 1!" }
+    }
+    
+    if (!bookingData.nomor_kursi || bookingData.nomor_kursi.length === 0) {
+      return { success: false, message: "Nomor kursi harus diisi!" }
+    }
+    
+    // Build backend payload with new field names
+    const payload = {
+      id: bookingData.id || undefined, // Optional custom ID
+      user: bookingData.user, // MongoDB ObjectId
+      jadwal: bookingData.jadwal, // MongoDB ObjectId
+      seats: bookingData.seats,
+      nomor_kursi: bookingData.nomor_kursi, // Array of strings
+      totalPrice: bookingData.totalPrice
+    }
+    
+    console.log("[addBooking] Payload:", payload)
+    
+    const res = await fetch(`${base}/pemesanan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    
+    console.log("[addBooking] API Response status:", res.status)
+    
+    const respBody = await (async () => {
+      try {
+        return await res.json()
+      } catch (e) {
+        console.warn("[addBooking] Failed to parse response body:", e)
+        return null
+      }
+    })()
+    
+    console.log("[addBooking] API Response body:", respBody)
+    
+    if (res.ok) {
+      console.log("[addBooking] ✅ Success")
+      return { success: true, message: "Pemesanan berhasil ditambahkan!", booking: respBody }
+    } else {
+      console.error("[addBooking] ❌ API Failed:", res.status, respBody)
+      
+      // Handle validation errors from backend
+      if (respBody && respBody.errors && Array.isArray(respBody.errors)) {
+        const errorMessages = respBody.errors.map(err => err.msg || err.message).join(", ")
+        return { success: false, message: `Validation error: ${errorMessages}`, details: respBody }
+      }
+      
+      return { success: false, message: respBody?.message || `API error: ${res.status}`, details: respBody }
+    }
+  } catch (error) {
+    console.error("[addBooking] ❌ Exception:", error)
+    return { success: false, message: `Error: ${error.message}` }
+  }
+}
+
 // Update booking status
 export const updateBookingStatus = async (bookingId, newStatus) => {
   const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
@@ -654,9 +819,11 @@ const dataManager = {
   getActiveSchedules,
   searchSchedules,
   getScheduleById,
+  ensureUserInMongoDB,
   updateSchedule,
   deleteSchedule,
   addSchedule,
+  addBooking,
   updateBookingStatus,
 }
 

@@ -2,10 +2,17 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose; // Kita butuh Schema untuk referensi
 
 const pemesananSchema = new mongoose.Schema({
+  // Custom ID manual input (like BK001, BK002)
+  id: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
   kode_booking: {
     type: String,
-    required: true,
-    unique: true
+    unique: true,
+    sparse: true
   },
   // Ini adalah "JOIN" ke collection 'users' (Poin 5 UTS)
   user: {
@@ -13,17 +20,28 @@ const pemesananSchema = new mongoose.Schema({
     ref: 'User', // Referensi ke Model 'User'
     required: true
   },
+  // Snapshot data user untuk performa (denormalized)
+  userId: String, // Custom ID dari localStorage
+  userName: String,
+  userEmail: String,
+  userPhone: String,
+  
   // Ini adalah "JOIN" ke collection 'jadwal' (Poin 5 UTS)
   jadwal: {
     type: Schema.Types.ObjectId,
     ref: 'Jadwal', // Referensi ke Model 'Jadwal'
     required: true
   },
-  tanggal_pesan: {
-    type: Date,
-    default: Date.now
-  },
-  jumlah_penumpang: {
+  // Snapshot data jadwal untuk performa (denormalized)
+  scheduleId: String, // Custom ID like JDW005
+  origin: String,
+  destination: String,
+  date: String, // Format: YYYY-MM-DD
+  time: String, // Format: HH:MM
+  price: Number,
+  
+  // Booking info
+  seats: {
     type: Number,
     required: true
   },
@@ -31,16 +49,14 @@ const pemesananSchema = new mongoose.Schema({
     type: [String], // Array of strings, misal: ["A1", "A2"]
     required: true
   },
-  total_harga: {
+  totalPrice: {
     type: Number,
     required: true
   },
-  status_pembayaran: {
-    type: String,
-    enum: ['pending', 'success', 'cancelled'], // Hanya boleh diisi 3 nilai ini
-    default: 'pending'
+  bookingDate: {
+    type: Date,
+    default: Date.now
   },
-  // Human-friendly booking lifecycle status used by frontend
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'completed', 'cancelled'],

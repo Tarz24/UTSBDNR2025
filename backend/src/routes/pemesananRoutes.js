@@ -16,9 +16,9 @@ router.post(
   "/pemesanan",
   body("user").notEmpty().isMongoId().withMessage("user harus berisi ObjectId yang valid"),
   body("jadwal").notEmpty().isMongoId().withMessage("jadwal harus berisi ObjectId yang valid"),
-  body("jumlah_penumpang").isInt({ min: 1 }).withMessage("jumlah_penumpang harus berupa integer >= 1"),
+  body("seats").isInt({ min: 1 }).withMessage("seats harus berupa integer >= 1"),
   body("nomor_kursi").isArray({ min: 1 }).withMessage("nomor_kursi harus berupa array dengan minimal 1 item"),
-  body("total_harga").isInt({ min: 0 }).withMessage("total_harga harus berupa angka"),
+  body("totalPrice").isInt({ min: 0 }).withMessage("totalPrice harus berupa angka"),
   createPemesanan
 )
 

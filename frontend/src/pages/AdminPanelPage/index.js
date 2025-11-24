@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
-import { fetchAllSchedules, getAllBookings, addSchedule, updateSchedule, deleteSchedule, updateBookingStatus, getAllUsers } from "../../utils/dataManager"
+import { fetchAllSchedules, getAllBookings, addSchedule, updateSchedule, deleteSchedule, updateBookingStatus, getAllUsers, addBooking, ensureUserInMongoDB } from "../../utils/dataManager"
 import AdminSidebar from "../../components/admin/AdminSidebar"
 import StatCard from "../../components/admin/StatCard"
 import BookingChart from "../../components/admin/BookingChart"
@@ -46,10 +46,12 @@ const AdminPanelPage = () => {
     // Load schedules from backend API (falls back to empty array on error)
     const schedulesData = await fetchAllSchedules()
     setSchedules(schedulesData || [])
-    // load users (try API first, then fallback)
+    
+    // Load users from localStorage, filter out admin users
     try {
-      const u = await getAllUsers()
-      setUsers(u || [])
+      const allUsers = getAllUsers()
+      const nonAdminUsers = allUsers.filter(u => u.role !== "admin")
+      setUsers(nonAdminUsers || [])
     } catch (e) {
       setUsers([])
     }
@@ -87,6 +89,7 @@ const AdminPanelPage = () => {
   const [users, setUsers] = useState([])
   const [showAddBookingModal, setShowAddBookingModal] = useState(false)
   const [bookingForm, setBookingForm] = useState({
+    id: "",
     userId: "",
     userName: "",
     email: "",
@@ -192,27 +195,147 @@ const AdminPanelPage = () => {
   }
 
   const openAddBooking = () => {
-    setBookingForm({ userId: "", userName: "", email: "", phone: "", scheduleId: "", seats: 1, seatNumbers: "", totalPrice: 0, status: "pending" })
+    setBookingForm({ id: "", userId: "", userName: "", email: "", phone: "", scheduleId: "", seats: 1, seatNumbers: "", totalPrice: 0, status: "pending" })
     setShowAddBookingModal(true)
   }
 
   const handleBookingInputChange = e => {
     const { name, value } = e.target
+    
+    // Auto-fill user data when user is selected
+    if (name === "userId" && value) {
+      const selectedUser = users.find(u => (u._id || u.id) === value)
+      if (selectedUser) {
+        setBookingForm(prev => ({
+          ...prev,
+          userId: value,
+          userName: selectedUser.namaLengkap || selectedUser.nama || "",
+          email: selectedUser.email || "",
+          phone: selectedUser.noHp || selectedUser.no_hp || ""
+        }))
+        return
+      }
+    }
+    
+    // Auto-fill schedule data and calculate price when schedule is selected
+    if (name === "scheduleId" && value) {
+      const selectedSchedule = schedules.find(s => (s._id || s.id) === value)
+      if (selectedSchedule) {
+        const seats = bookingForm.seats || 1
+        const totalPrice = selectedSchedule.price * seats
+        setBookingForm(prev => ({
+          ...prev,
+          scheduleId: value,
+          totalPrice: totalPrice
+        }))
+        return
+      }
+    }
+    
+    // Recalculate price when seats change
+    if (name === "seats" && bookingForm.scheduleId) {
+      const selectedSchedule = schedules.find(s => (s._id || s.id) === bookingForm.scheduleId)
+      if (selectedSchedule) {
+        const seats = parseInt(value) || 1
+        const totalPrice = selectedSchedule.price * seats
+        setBookingForm(prev => ({
+          ...prev,
+          seats: seats,
+          totalPrice: totalPrice
+        }))
+        return
+      }
+    }
+    
     setBookingForm(prev => ({ ...prev, [name]: value }))
   }
 
   const submitBooking = async e => {
     e.preventDefault()
-    const payload = {
-      userId: bookingForm.userId || undefined,
-      userName: bookingForm.userName,
-      email: bookingForm.email,
-      phone: bookingForm.phone,
-      scheduleId: bookingForm.scheduleId,
-      seats: Number(bookingForm.seats),
-      nomor_kursi: bookingForm.seatNumbers ? bookingForm.seatNumbers.split(/\s*,\s*/g) : [],
-      totalPrice: Number(bookingForm.totalPrice),
-      status: bookingForm.status,
+    
+    console.log("[submitBooking] Form data:", bookingForm)
+    
+    // Validation
+    if (!bookingForm.userId) {
+      alert("Pilih user terlebih dahulu!")
+      return
+    }
+    
+    if (!bookingForm.scheduleId) {
+      alert("Pilih jadwal terlebih dahulu!")
+      return
+    }
+    
+    if (!bookingForm.seatNumbers || bookingForm.seatNumbers.trim() === "") {
+      alert("Nomor kursi harus diisi!")
+      return
+    }
+    
+    // Parse seat numbers
+    const seatArray = bookingForm.seatNumbers.split(/\s*,\s*/g).filter(s => s.length > 0)
+    if (seatArray.length === 0) {
+      alert("Nomor kursi tidak valid!")
+      return
+    }
+    
+    try {
+      // Step 1: Ensure user exists in MongoDB
+      console.log("[submitBooking] Step 1: Ensuring user exists in MongoDB...")
+      const selectedUser = users.find(u => (u._id || u.id) === bookingForm.userId)
+      if (!selectedUser) {
+        alert("User tidak ditemukan!")
+        return
+      }
+      
+      const userResult = await ensureUserInMongoDB(selectedUser)
+      console.log("[submitBooking] User result:", userResult)
+      
+      if (!userResult.success) {
+        alert(`Gagal memastikan user di database: ${userResult.message}`)
+        return
+      }
+      
+      const mongoUserId = userResult.userId
+      console.log("[submitBooking] MongoDB User ID:", mongoUserId)
+      
+      // Step 2: Build payload for MongoDB API with new field names
+      const payload = {
+        id: bookingForm.id || undefined, // Custom ID (optional)
+        user: mongoUserId, // MongoDB ObjectId
+        jadwal: bookingForm.scheduleId, // MongoDB ObjectId dari schedule
+        seats: Number(bookingForm.seats),
+        nomor_kursi: seatArray,
+        totalPrice: Number(bookingForm.totalPrice)
+      }
+      
+      console.log("[submitBooking] Payload:", payload)
+      
+      // Step 3: Create booking
+      const result = await addBooking(payload)
+      console.log("[submitBooking] Result:", result)
+      
+      if (result.success) {
+        await loadData()
+        setShowAddBookingModal(false)
+        setBookingForm({
+          id: "",
+          userId: "",
+          userName: "",
+          email: "",
+          phone: "",
+          scheduleId: "",
+          seats: 1,
+          seatNumbers: "",
+          totalPrice: 0,
+          status: "pending",
+        })
+        alert("Pemesanan berhasil ditambahkan!")
+      } else {
+        alert(result.message || "Gagal menambahkan pemesanan!")
+      }
+    } catch (error) {
+      console.error("[submitBooking] Exception:", error)
+      alert(`Error: ${error.message}`)
     }
   }
 
@@ -343,7 +466,7 @@ const AdminPanelPage = () => {
   const handleUpdateBookingStatus = async (booking, newStatus) => {
     console.log("[handleUpdateBookingStatus] Called with:", { booking, newStatus })
     console.log("[handleUpdateBookingStatus] Using _id:", booking._id)
-    
+
     try {
       // Gunakan _id (MongoDB ObjectId) untuk API call, bukan display ID (kode_booking)
       const result = await updateBookingStatus(booking._id, newStatus)
@@ -573,28 +696,40 @@ const AdminPanelPage = () => {
                           <div className="action-buttons">
                             {booking.status === "pending" && (
                               <>
-                                <button className="action-btn confirm-btn" onClick={() => {
-                                  console.log("🔍 Booking object:", booking);
-                                  console.log("🔍 Sending _id:", booking._id);
-                                  handleUpdateBookingStatus(booking, "confirmed");
-                                }} title="Konfirmasi">
+                                <button
+                                  className="action-btn confirm-btn"
+                                  onClick={() => {
+                                    console.log("🔍 Booking object:", booking)
+                                    console.log("🔍 Sending _id:", booking._id)
+                                    handleUpdateBookingStatus(booking, "confirmed")
+                                  }}
+                                  title="Konfirmasi"
+                                >
                                   ✓
                                 </button>
-                                <button className="action-btn cancel-btn" onClick={() => {
-                                  console.log("🔍 Booking object:", booking);
-                                  console.log("🔍 Sending _id:", booking._id);
-                                  handleUpdateBookingStatus(booking, "cancelled");
-                                }} title="Batalkan">
+                                <button
+                                  className="action-btn cancel-btn"
+                                  onClick={() => {
+                                    console.log("🔍 Booking object:", booking)
+                                    console.log("🔍 Sending _id:", booking._id)
+                                    handleUpdateBookingStatus(booking, "cancelled")
+                                  }}
+                                  title="Batalkan"
+                                >
                                   ✕
                                 </button>
                               </>
                             )}
                             {booking.status === "confirmed" && (
-                              <button className="action-btn complete-btn" onClick={() => {
-                                console.log("🔍 Booking object:", booking);
-                                console.log("🔍 Sending _id:", booking._id);
-                                handleUpdateBookingStatus(booking, "completed");
-                              }} title="Tandai Selesai">
+                              <button
+                                className="action-btn complete-btn"
+                                onClick={() => {
+                                  console.log("🔍 Booking object:", booking)
+                                  console.log("🔍 Sending _id:", booking._id)
+                                  handleUpdateBookingStatus(booking, "completed")
+                                }}
+                                title="Tandai Selesai"
+                              >
                                 ✓✓
                               </button>
                             )}
@@ -777,12 +912,18 @@ const AdminPanelPage = () => {
             </div>
             <form onSubmit={submitBooking}>
               <div className="form-group">
-                <label>Pilih User</label>
-                <select name="userId" value={bookingForm.userId} onChange={handleBookingInputChange}>
-                  <option value="">-- Pilih User (atau kosong untuk input manual) --</option>
+                <label>ID Pemesanan (Opsional)</label>
+                <input type="text" name="id" value={bookingForm.id} onChange={handleBookingInputChange} placeholder="BK001" />
+                <small style={{ color: "#666", fontSize: "12px" }}>Kosongkan untuk generate otomatis</small>
+              </div>
+              
+              <div className="form-group">
+                <label>Pilih User *</label>
+                <select name="userId" value={bookingForm.userId} onChange={handleBookingInputChange} required>
+                  <option value="">-- Pilih User --</option>
                   {users.map(u => (
                     <option key={u.id || u._id} value={u.id || u._id}>
-                      {u.namaLengkap || u.nama || u.email}
+                      {u.namaLengkap || u.nama || u.email} ({u.email})
                     </option>
                   ))}
                 </select>
@@ -791,52 +932,54 @@ const AdminPanelPage = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label>Nama Pemesan</label>
-                  <input type="text" name="userName" value={bookingForm.userName} onChange={handleBookingInputChange} placeholder="Nama lengkap" />
+                  <input type="text" name="userName" value={bookingForm.userName} readOnly placeholder="Akan terisi otomatis" style={{ backgroundColor: "#f5f5f5" }} />
                 </div>
                 <div className="form-group">
                   <label>Email</label>
-                  <input type="email" name="email" value={bookingForm.email} onChange={handleBookingInputChange} placeholder="email@example.com" />
+                  <input type="email" name="email" value={bookingForm.email} readOnly placeholder="Akan terisi otomatis" style={{ backgroundColor: "#f5f5f5" }} />
                 </div>
               </div>
 
               <div className="form-group">
                 <label>Nomor HP</label>
-                <input type="text" name="phone" value={bookingForm.phone} onChange={handleBookingInputChange} placeholder="08xxxx" />
+                <input type="text" name="phone" value={bookingForm.phone} readOnly placeholder="Akan terisi otomatis" style={{ backgroundColor: "#f5f5f5" }} />
               </div>
 
               <div className="form-group">
-                <label>Pilih Jadwal</label>
+                <label>Pilih Jadwal *</label>
                 <select name="scheduleId" value={bookingForm.scheduleId} onChange={handleBookingInputChange} required>
                   <option value="">-- Pilih Jadwal --</option>
                   {schedules.map(s => (
-                    <option key={s._id || s.id} value={s._id || s.id}>{`${s.id || s._id} — ${s.origin} → ${s.destination} (${s.date} ${s.time})`}</option>
+                    <option key={s._id || s.id} value={s._id || s.id}>
+                      {`${s.origin} → ${s.destination} | ${s.date} ${s.time} | Rp ${s.price.toLocaleString()}`}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Jumlah Kursi</label>
+                  <label>Jumlah Kursi *</label>
                   <input type="number" name="seats" value={bookingForm.seats} onChange={handleBookingInputChange} min="1" required />
                 </div>
                 <div className="form-group">
-                  <label>Nomor Kursi (pisah koma)</label>
-                  <input type="text" name="seatNumbers" value={bookingForm.seatNumbers} onChange={handleBookingInputChange} placeholder="A1, A2" />
+                  <label>Nomor Kursi * (pisah koma)</label>
+                  <input type="text" name="seatNumbers" value={bookingForm.seatNumbers} onChange={handleBookingInputChange} placeholder="A1, A2, A3" required />
                 </div>
               </div>
 
               <div className="form-row">
                 <div className="form-group">
                   <label>Total Harga</label>
-                  <input type="number" name="totalPrice" value={bookingForm.totalPrice} onChange={handleBookingInputChange} min="0" />
+                  <input type="text" value={`Rp ${bookingForm.totalPrice.toLocaleString("id-ID")}`} readOnly style={{ backgroundColor: "#f5f5f5", fontWeight: "bold" }} />
                 </div>
                 <div className="form-group">
                   <label>Status</label>
                   <select name="status" value={bookingForm.status} onChange={handleBookingInputChange}>
-                    <option value="pending">pending</option>
-                    <option value="confirmed">confirmed</option>
-                    <option value="cancelled">cancelled</option>
-                    <option value="completed">completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
               </div>

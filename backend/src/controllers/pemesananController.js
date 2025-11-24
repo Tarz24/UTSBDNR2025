@@ -172,14 +172,102 @@ const createPemesanan = async (req, res) => {
     return res.status(400).json({ errors: result.array() })
   }
   try {
-    const payload = { ...req.body }
-    if (!payload.kode_booking) {
-      payload.kode_booking = `BK${Date.now().toString().slice(-6)}`
+    const { id, user, jadwal, seats, nomor_kursi, totalPrice } = req.body
+    
+    console.log('=== CREATE PEMESANAN ===')
+    console.log('Request body:', JSON.stringify(req.body, null, 2))
+    
+    const payload = {
+      id: id || undefined, // Custom ID (optional)
+      user,
+      jadwal,
+      seats,
+      nomor_kursi,
+      totalPrice,
+      bookingDate: new Date(),
+      status: 'pending'
     }
+    
+    // Fetch user data for snapshot
+    if (user) {
+      try {
+        const UserModel = require('../models/User')
+        const userDoc = await UserModel.findById(user)
+        if (userDoc) {
+          payload.userId = userDoc.id || String(userDoc._id) // Use custom id or MongoDB _id as string
+          payload.userName = userDoc.namaLengkap || userDoc.nama // Try namaLengkap first, then nama
+          payload.userEmail = userDoc.email
+          payload.userPhone = userDoc.noHp || userDoc.no_hp // Try noHp first, then no_hp
+          console.log('✓ User snapshot:', { userId: payload.userId, userName: payload.userName, userEmail: payload.userEmail, userPhone: payload.userPhone })
+        } else {
+          console.warn('⚠️ User not found for ObjectId:', user)
+        }
+      } catch (err) {
+        console.error('❌ Failed to fetch user:', err.message)
+      }
+    }
+    
+    // Fetch jadwal data for snapshot
+    if (jadwal) {
+      try {
+        const JadwalModel = require('../models/Jadwal')
+        const jadwalDoc = await JadwalModel.findById(jadwal)
+        if (jadwalDoc) {
+          console.log('🔍 DEBUG Jadwal Document:', JSON.stringify(jadwalDoc.toObject(), null, 2))
+          
+          payload.scheduleId = jadwalDoc.id || String(jadwalDoc._id) // Custom ID like JDW005 or MongoDB _id as string
+          payload.origin = jadwalDoc.origin || jadwalDoc.rute_awal // Try origin first, then rute_awal
+          payload.destination = jadwalDoc.destination || jadwalDoc.rute_tujuan // Try destination first, then rute_tujuan
+          payload.price = jadwalDoc.price || jadwalDoc.harga // Try price first, then harga
+          
+          // Parse date and time from jam_berangkat (Date field) or from date/time fields
+          const dateField = jadwalDoc.date || jadwalDoc.tanggal_keberangkatan || jadwalDoc.jam_berangkat
+          const timeField = jadwalDoc.time || jadwalDoc.waktu_keberangkatan
+          
+          if (dateField) {
+            const date = new Date(dateField)
+            if (!isNaN(date.getTime())) {
+              payload.date = date.toISOString().split('T')[0] // YYYY-MM-DD
+              
+              // If no separate time field, extract from date
+              if (!timeField) {
+                const hours = String(date.getHours()).padStart(2, '0')
+                const minutes = String(date.getMinutes()).padStart(2, '0')
+                payload.time = `${hours}:${minutes}` // HH:MM
+              }
+            }
+          }
+          
+          // Parse time if provided separately
+          if (timeField) {
+            if (typeof timeField === 'string') {
+              // Already in string format like "08:00"
+              const [hours, minutes] = timeField.split(':')
+              payload.time = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}` // HH:MM
+            } else if (timeField instanceof Date) {
+              const hours = String(timeField.getHours()).padStart(2, '0')
+              const minutes = String(timeField.getMinutes()).padStart(2, '0')
+              payload.time = `${hours}:${minutes}`
+            }
+          }
+          
+          console.log('✓ Jadwal snapshot:', { scheduleId: payload.scheduleId, origin: payload.origin, destination: payload.destination, date: payload.date, time: payload.time, price: payload.price })
+        } else {
+          console.warn('⚠️ Jadwal not found for ObjectId:', jadwal)
+        }
+      } catch (err) {
+        console.error('❌ Failed to fetch jadwal:', err.message)
+      }
+    }
+    
+    console.log('📦 Full payload before save:', JSON.stringify(payload, null, 2))
     const saved = await new PemesananModel(payload).save()
+    console.log('✅ Pemesanan saved with _id:', saved._id)
+    console.log('💾 Saved document:', JSON.stringify(saved.toObject(), null, 2))
+    
     res.status(201).json(saved)
   } catch (error) {
-    console.error("Error membuat pemesanan:", error)
+    console.error("❌ Error membuat pemesanan:", error)
     res.status(500).json({ message: "Internal server error, tidak bisa membuat pemesanan", details: error.message })
   }
 }
@@ -253,7 +341,7 @@ const confirmPemesanan = async (req, res) => {
   try {
     const updates = { status_pembayaran: "success", status: "confirmed" }
     console.log("[confirmPemesanan] Updates:", updates)
-    
+
     let updated
     if (mongoose.Types.ObjectId.isValid(idParam)) {
       console.log("[confirmPemesanan] Using ObjectId query")
@@ -262,14 +350,14 @@ const confirmPemesanan = async (req, res) => {
       console.log("[confirmPemesanan] Using kode_booking query")
       updated = await PemesananModel.findOneAndUpdate({ kode_booking: idParam }, updates, { new: true, runValidators: true })
     }
-    
+
     console.log("[confirmPemesanan] Updated document:", updated)
-    
+
     if (!updated) {
       console.log("[confirmPemesanan] ❌ Document not found")
       return res.status(404).json({ message: "Pemesanan tidak ditemukan" })
     }
-    
+
     console.log("[confirmPemesanan] ✅ Success")
     res.status(200).json(updated)
   } catch (error) {
@@ -284,7 +372,7 @@ const cancelPemesanan = async (req, res) => {
   try {
     const updates = { status_pembayaran: "cancelled", status: "cancelled" }
     console.log("[cancelPemesanan] Updates:", updates)
-    
+
     let updated
     if (mongoose.Types.ObjectId.isValid(idParam)) {
       console.log("[cancelPemesanan] Using ObjectId query")
@@ -293,14 +381,14 @@ const cancelPemesanan = async (req, res) => {
       console.log("[cancelPemesanan] Using kode_booking query")
       updated = await PemesananModel.findOneAndUpdate({ kode_booking: idParam }, updates, { new: true, runValidators: true })
     }
-    
+
     console.log("[cancelPemesanan] Updated document:", updated)
-    
+
     if (!updated) {
       console.log("[cancelPemesanan] ❌ Document not found")
       return res.status(404).json({ message: "Pemesanan tidak ditemukan" })
     }
-    
+
     console.log("[cancelPemesanan] ✅ Success")
     res.status(200).json(updated)
   } catch (error) {
@@ -315,7 +403,7 @@ const completePemesanan = async (req, res) => {
   try {
     const updates = { status_pembayaran: "success", status: "completed" }
     console.log("[completePemesanan] Updates:", updates)
-    
+
     let updated
     if (mongoose.Types.ObjectId.isValid(idParam)) {
       console.log("[completePemesanan] Using ObjectId query")
@@ -324,14 +412,14 @@ const completePemesanan = async (req, res) => {
       console.log("[completePemesanan] Using kode_booking query")
       updated = await PemesananModel.findOneAndUpdate({ kode_booking: idParam }, updates, { new: true, runValidators: true })
     }
-    
+
     console.log("[completePemesanan] Updated document:", updated)
-    
+
     if (!updated) {
       console.log("[completePemesanan] ❌ Document not found")
       return res.status(404).json({ message: "Pemesanan tidak ditemukan" })
     }
-    
+
     console.log("[completePemesanan] ✅ Success")
     res.status(200).json(updated)
   } catch (error) {
