@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getAllSchedules } from '../../../utils/dataManager';
 import './SearchForm.css';
 
 function SearchForm({ onSearch }) {
@@ -13,20 +12,35 @@ function SearchForm({ onSearch }) {
   });
 
   const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load unique locations dari schedules di localStorage
+  // Load unique locations dari MongoDB API
   useEffect(() => {
-    const schedules = getAllSchedules();
-    const uniqueLocations = new Set();
+    const fetchLocations = async () => {
+      try {
+        const base = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+        const res = await fetch(`${base}/jadwal`);
+        
+        if (res.ok) {
+          const schedules = await res.json();
+          const uniqueLocations = new Set();
 
-    schedules.forEach(schedule => {
-      uniqueLocations.add(schedule.origin);
-      uniqueLocations.add(schedule.destination);
-    });
+          schedules.forEach(schedule => {
+            if (schedule.origin) uniqueLocations.add(schedule.origin);
+            if (schedule.destination) uniqueLocations.add(schedule.destination);
+          });
 
-    // Convert Set to Array dan sort alphabetically
-    const sortedLocations = Array.from(uniqueLocations).sort();
-    setLocations(sortedLocations);
+          const sortedLocations = Array.from(uniqueLocations).sort();
+          setLocations(sortedLocations);
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLocations();
   }, []);
 
   const handleChange = (e) => {

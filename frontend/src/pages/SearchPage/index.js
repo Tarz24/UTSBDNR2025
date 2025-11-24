@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
-import { searchSchedules, getAllSchedules } from "../../utils/dataManager"
 import Navbar from "../../components/common/Navbar"
 import Footer from "../../components/common/Footer"
 import WhatsAppButton from "../../components/common/WhatsAppButton"
@@ -53,58 +52,83 @@ function SearchPage() {
   const [tempSearchParams, setTempSearchParams] = useState({ ...searchParams })
   const [availableLocations, setAvailableLocations] = useState([])
 
-  // Load available locations untuk dropdown
+  // Load available locations untuk dropdown dari MongoDB
   useEffect(() => {
-    const schedules = getAllSchedules()
-    const locations = new Set()
-    schedules.forEach(schedule => {
-      locations.add(schedule.origin)
-      locations.add(schedule.destination)
-    })
-    setAvailableLocations(Array.from(locations).sort())
+    const fetchLocations = async () => {
+      try {
+        const base = process.env.REACT_APP_API_URL || 'http://localhost:3000/api'
+        const res = await fetch(`${base}/jadwal`)
+        
+        if (res.ok) {
+          const schedules = await res.json()
+          const locations = new Set()
+          schedules.forEach(schedule => {
+            if (schedule.origin) locations.add(schedule.origin)
+            if (schedule.destination) locations.add(schedule.destination)
+          })
+          setAvailableLocations(Array.from(locations).sort())
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error)
+      }
+    }
+    
+    fetchLocations()
   }, [])
 
-  // Load jadwal dari localStorage berdasarkan searchParams
+  // Load jadwal dari MongoDB berdasarkan searchParams
   useEffect(() => {
     if (!isLoggedIn) return
 
-    setIsLoadingSchedules(true)
+    const fetchSchedules = async () => {
+      setIsLoadingSchedules(true)
 
-    // Helper function untuk transform data ke format yang dibutuhkan SearchResultCard
-    const transformScheduleData = schedule => {
-      // Extract pool name dari origin (e.g., "BANDUNG, PASTEUR2" -> "Pasteur 2")
-      const getPoolName = location => {
-        const parts = location.split(", ")
-        return parts.length > 1 ? parts[1] : parts[0]
-      }
+      try {
+        const base = process.env.REACT_APP_API_URL || 'http://localhost:3000/api'
+        const res = await fetch(`${base}/jadwal`)
+        
+        if (res.ok) {
+          const allSchedules = await res.json()
+          
+          // Filter schedules berdasarkan search params
+          const filtered = allSchedules.filter(schedule => {
+            const matchOrigin = !searchParams.berangkatDari || schedule.origin === searchParams.berangkatDari
+            const matchDestination = !searchParams.tujuanKe || schedule.destination === searchParams.tujuanKe
+            const matchDate = !searchParams.tanggalPergi || schedule.date === searchParams.tanggalPergi
+            const matchStatus = schedule.status === 'active'
+            const hasSeats = schedule.availableSeats > 0
+            
+            return matchOrigin && matchDestination && matchDate && matchStatus && hasSeats
+          })
 
-      // Format date (YYYY-MM-DD -> DD Month YYYY)
-      const formatDate = dateStr => {
-        const date = new Date(dateStr)
-        const options = { day: "numeric", month: "long", year: "numeric" }
-        return date.toLocaleDateString("id-ID", options)
-      }
+          // Transform data untuk SearchResultCard
+          const transformedSchedules = filtered.map(schedule => ({
+            id: schedule._id || schedule.id,
+            dari: schedule.origin,
+            tujuan: schedule.destination,
+            pool: schedule.origin.split(', ')[1] || schedule.origin,
+            tanggal: new Date(schedule.date).toLocaleDateString('id-ID', { 
+              day: 'numeric', 
+              month: 'long', 
+              year: 'numeric' 
+            }),
+            jam: schedule.time,
+            kursiTersedia: schedule.availableSeats,
+            totalKursi: schedule.seats,
+            harga: schedule.price,
+            originalData: schedule,
+          }))
 
-      return {
-        id: schedule.id,
-        dari: schedule.origin,
-        tujuan: schedule.destination,
-        pool: getPoolName(schedule.origin),
-        tanggal: formatDate(schedule.date),
-        jam: schedule.time,
-        kursiTersedia: schedule.availableSeats,
-        totalKursi: schedule.seats,
-        harga: schedule.price,
-        // Keep original data for booking
-        originalData: schedule,
+          setJadwalPergi(transformedSchedules)
+        }
+      } catch (error) {
+        console.error('Error fetching schedules:', error)
+      } finally {
+        setIsLoadingSchedules(false)
       }
     }
 
-    // Cari jadwal keberangkatan
-    const resultsPergi = searchSchedules(searchParams.berangkatDari, searchParams.tujuanKe, searchParams.tanggalPergi)
-    setJadwalPergi(resultsPergi.map(transformScheduleData))
-
-    setIsLoadingSchedules(false)
+    fetchSchedules()
   }, [searchParams, isLoggedIn])
 
   // Handler untuk memilih jadwal pergi
@@ -131,44 +155,19 @@ function SearchPage() {
     setIsModalOpen(false)
   }
 
-  // Handler untuk lanjut ke halaman booking
+  // Handler untuk lanjut ke halaman booking (seat selection)
   const handleLanjutBooking = () => {
     if (!selectedJadwalPergi) {
       alert("Silakan pilih jadwal keberangkatan terlebih dahulu!")
       return
     }
 
-    // Create booking menggunakan addBooking dari AuthContext
-    const bookingDataPergi = {
-      scheduleId: selectedJadwalPergi.originalData.id,
-      origin: selectedJadwalPergi.originalData.origin,
-      destination: selectedJadwalPergi.originalData.destination,
-      date: selectedJadwalPergi.originalData.date,
-      time: selectedJadwalPergi.originalData.time,
-      seats: searchParams.penumpang,
-      price: selectedJadwalPergi.originalData.price,
-      totalPrice: selectedJadwalPergi.originalData.price * searchParams.penumpang,
-    }
-
-    // Simpan booking ke localStorage
-    const result = addBooking(bookingDataPergi)
-
-    if (!result.success) {
-      alert(result.message || "Gagal membuat booking!")
-      return
-    }
-
-    console.log("Booking created:", result.booking)
-
-    // Navigate ke MyTicketPage dengan data booking
-    navigate("/my-ticket", {
+    // Navigate ke SeatSelectionPage dengan data jadwal
+    navigate("/seat-selection", {
       state: {
-        bookingData: {
-          ...result.booking,
-          jadwalPergi: selectedJadwalPergi,
-          penumpang: searchParams.penumpang,
-        },
-      },
+        schedule: selectedJadwalPergi,
+        searchParams: searchParams
+      }
     })
   }
 
