@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { initializeDummyData } from './utils/dataManager';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
+import SeatSelectionPage from './pages/SeatSelectionPage';
 import MyTicketPage from './pages/MyTicketPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -21,6 +22,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/seat-selection" element={<SeatSelectionPage />} />
             <Route path="/my-ticket" element={<MyTicketPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

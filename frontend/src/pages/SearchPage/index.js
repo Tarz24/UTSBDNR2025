@@ -135,14 +135,14 @@ function SearchPage() {
     setIsModalOpen(false);
   };
 
-  // Handler untuk lanjut ke halaman booking
+  // Handler untuk lanjut ke halaman seat selection
   const handleLanjutBooking = () => {
     if (!selectedJadwalPergi) {
       alert('Silakan pilih jadwal keberangkatan terlebih dahulu!');
       return;
     }
 
-    // Create booking menggunakan addBooking dari AuthContext
+    // Prepare booking data untuk SeatSelectionPage
     const bookingDataPergi = {
       scheduleId: selectedJadwalPergi.originalData.id,
       origin: selectedJadwalPergi.originalData.origin,
@@ -151,27 +151,15 @@ function SearchPage() {
       time: selectedJadwalPergi.originalData.time,
       seats: searchParams.penumpang,
       price: selectedJadwalPergi.originalData.price,
-      totalPrice: selectedJadwalPergi.originalData.price * searchParams.penumpang
+      totalPrice: selectedJadwalPergi.originalData.price * searchParams.penumpang,
+      jadwalPergi: selectedJadwalPergi
     };
 
-    // Simpan booking ke localStorage
-    const result = addBooking(bookingDataPergi);
-
-    if (!result.success) {
-      alert(result.message || 'Gagal membuat booking!');
-      return;
-    }
-
-    console.log('Booking created:', result.booking);
-
-    // Navigate ke MyTicketPage dengan data booking
-    navigate('/my-ticket', {
+    // Navigate ke SeatSelectionPage
+    navigate('/seat-selection', {
       state: {
-        bookingData: {
-          ...result.booking,
-          jadwalPergi: selectedJadwalPergi,
-          penumpang: searchParams.penumpang
-        }
+        bookingData: bookingDataPergi,
+        searchParams: searchParams
       }
     });
   };
@@ -245,34 +233,27 @@ function SearchPage() {
             </div>
           </div>
 
-          {/* Booking Summary Sidebar */}
+          {/* Quick Action Sidebar */}
           <div className="booking-summary">
             <div className="summary-card">
-              <h3 className="summary-title">Ringkasan Pemesanan</h3>
+              <h3 className="summary-title">Pilih Jadwal</h3>
 
-              {/* Jadwal Pergi */}
-              {selectedJadwalPergi && (
-                <div className="selected-schedule">
-                  <div className="schedule-header">
-                    <span className="schedule-type">✈️ Keberangkatan</span>
+              {selectedJadwalPergi ? (
+                <div className="selected-info">
+                  <div className="info-icon">✅</div>
+                  <p className="info-message">Jadwal telah dipilih!</p>
+                  <div className="selected-route">
+                    <p>{selectedJadwalPergi.dari}</p>
+                    <span className="route-arrow">→</span>
+                    <p>{selectedJadwalPergi.tujuan}</p>
                   </div>
-                  <div className="schedule-details">
-                    <p className="schedule-route">{selectedJadwalPergi.dari} → {selectedJadwalPergi.tujuan}</p>
-                    <p className="schedule-time">📅 {selectedJadwalPergi.tanggal} • 🕐 {selectedJadwalPergi.jam}</p>
-                    <p className="schedule-price">Rp {selectedJadwalPergi.harga.toLocaleString('id-ID')} x {searchParams.penumpang}</p>
-                  </div>
+                  <p className="selected-datetime">📅 {selectedJadwalPergi.tanggal} • 🕐 {selectedJadwalPergi.jam}</p>
                 </div>
-              )}
-
-              {/* Total Price */}
-              {selectedJadwalPergi && (
-                <>
-                  <div className="summary-divider"></div>
-                  <div className="summary-total">
-                    <span className="total-label">Total Pembayaran</span>
-                    <span className="total-price">Rp {calculateTotalPrice().toLocaleString('id-ID')}</span>
-                  </div>
-                </>
+              ) : (
+                <div className="no-selection">
+                  <div className="info-icon">👆</div>
+                  <p>Pilih jadwal di sebelah kiri untuk melanjutkan</p>
+                </div>
               )}
 
               {/* Action Button */}
@@ -281,12 +262,12 @@ function SearchPage() {
                 onClick={handleLanjutBooking}
                 disabled={!selectedJadwalPergi}
               >
-                Lanjut ke Pemesanan
+                Lanjut Pilih Kursi →
               </button>
 
               {/* Info */}
               <div className="booking-info">
-                <p className="info-text">💡 Pilih jadwal keberangkatan untuk melanjutkan</p>
+                <p className="info-text">💡 Anda akan memilih kursi di langkah berikutnya</p>
               </div>
             </div>
           </div>
