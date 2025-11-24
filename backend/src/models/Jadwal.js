@@ -10,44 +10,68 @@ const jadwalSchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
     },
+    // Modern field names
+    origin: {
+      type: String,
+      index: true,
+    },
+    destination: {
+      type: String,
+      index: true,
+    },
+    date: {
+      type: String, // YYYY-MM-DD format
+    },
+    time: {
+      type: String, // HH:MM format
+    },
+    price: {
+      type: Number,
+    },
+    seats: {
+      type: Number,
+      default: 20,
+    },
+    availableSeats: {
+      type: Number,
+      default: 20,
+    },
+    status: {
+      type: String,
+      enum: ['active', 'completed', 'cancelled'],
+      default: 'active',
+    },
+    // Legacy field names for backward compatibility
     rute_awal: {
       type: String,
-      required: true,
-      index: true, // PENTING: untuk mempercepat query pencarian
+      index: true,
     },
     rute_tujuan: {
       type: String,
-      required: true,
-      index: true, // PENTING: untuk mempercepat query pencarian
+      index: true,
     },
     pool_keberangkatan: {
       type: String,
-      required: true,
     },
     pool_tujuan: {
       type: String,
-      required: true,
     },
     jam_berangkat: {
       type: Date,
-      required: true,
     },
     estimasi_jam_tiba: {
       type: Date,
-      required: true,
     },
     harga: {
       type: Number,
-      required: true,
     },
     total_kursi: {
       type: Number,
-      default: 20, // Asumsi default 20 kursi
+      default: 20,
     },
     kursi_tersedia: {
       type: Number,
       default: 20,
-      // Nanti akan di-update (dikurangi) oleh Backend B saat ada booking
     },
   },
   {
