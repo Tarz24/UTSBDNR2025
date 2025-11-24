@@ -240,8 +240,6 @@ function SearchPage() {
 
               {selectedJadwalPergi ? (
                 <div className="selected-info">
-                  <div className="info-icon">✅</div>
-                  <p className="info-message">Jadwal telah dipilih!</p>
                   <div className="selected-route">
                     <p>{selectedJadwalPergi.dari}</p>
                     <span className="route-arrow">→</span>

@@ -290,6 +290,7 @@ function ProfileUserPage() {
                       harga: booking.price
                     },
                     jumlahPenumpang: booking.seats,
+                    selectedSeats: booking.selectedSeats || [],
                     totalHarga: booking.totalPrice,
                     namaPenumpang: booking.userName,
                     noHpPenumpang: booking.userPhone,

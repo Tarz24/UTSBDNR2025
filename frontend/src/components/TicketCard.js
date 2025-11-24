@@ -127,6 +127,12 @@ function TicketCard({ ticket }) {
           <span className="summary-label">👥 Jumlah Penumpang:</span>
           <span className="summary-value">{ticket.jumlahPenumpang} orang</span>
         </div>
+        {ticket.selectedSeats && ticket.selectedSeats.length > 0 && (
+          <div className="summary-item">
+            <span className="summary-label">💺 Nomor Kursi:</span>
+            <span className="summary-value">{ticket.selectedSeats.join(', ')}</span>
+          </div>
+        )}
         <div className="summary-item total-price">
           <span className="summary-label">💰 Total Harga:</span>
           <span className="summary-value">{formatPrice(ticket.totalHarga)}</span>

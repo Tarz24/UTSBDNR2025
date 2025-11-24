@@ -47,7 +47,7 @@ function SeatSelectionPage() {
       setSelectedSeats(selectedSeats.filter(s => s !== seatNumber));
     } else {
       // Cek apakah sudah mencapai jumlah penumpang
-      if (bookingData && selectedSeats.length >= bookingData.seats) {
+      if (bookingData && selectedSeats.length >= Number(bookingData.seats)) {
         alert(`Anda hanya dapat memilih ${bookingData.seats} kursi sesuai jumlah penumpang`);
         return;
       }
@@ -62,16 +62,44 @@ function SeatSelectionPage() {
   };
 
   const handleContinue = () => {
-    if (selectedSeats.length !== bookingData?.seats) {
+    if (selectedSeats.length !== Number(bookingData?.seats)) {
       alert(`Silakan pilih ${bookingData.seats} kursi sesuai jumlah penumpang`);
       return;
     }
+
+    // Simpan booking ke localStorage dengan selectedSeats
+    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+    const newBookingId = `BK${String(bookings.length + 1).padStart(3, '0')}`;
+    
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const newBooking = {
+      id: newBookingId,
+      userId: currentUser?.id,
+      userName: currentUser?.namaLengkap,
+      userEmail: currentUser?.email,
+      userPhone: currentUser?.noHp,
+      scheduleId: bookingData.scheduleId,
+      origin: bookingData.origin,
+      destination: bookingData.destination,
+      date: bookingData.date,
+      time: bookingData.time,
+      seats: bookingData.seats,
+      selectedSeats: selectedSeats.sort((a, b) => a - b),
+      price: bookingData.price,
+      totalPrice: bookingData.totalPrice,
+      status: 'confirmed',
+      bookingDate: new Date().toISOString()
+    };
+
+    bookings.push(newBooking);
+    localStorage.setItem('bookings', JSON.stringify(bookings));
 
     // Navigate ke MyTicketPage dengan data booking + kursi
     navigate('/my-ticket', {
       state: {
         bookingData: {
           ...bookingData,
+          id: newBookingId,
           selectedSeats: selectedSeats.sort((a, b) => a - b)
         }
       }
@@ -207,7 +235,7 @@ function SeatSelectionPage() {
               <button 
                 className="btn-continue" 
                 onClick={handleContinue}
-                disabled={selectedSeats.length !== bookingData.seats}
+                disabled={selectedSeats.length !== Number(bookingData.seats)}
               >
                 Lanjut ke Pembayaran
               </button>

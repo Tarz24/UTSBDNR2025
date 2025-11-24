@@ -64,6 +64,7 @@ function MyTicketPage() {
           armada: bookingData.jadwalPulang.pool
         } : null,
         jumlahPenumpang: bookingData.seats,
+        selectedSeats: bookingData.selectedSeats || [],
         totalHarga: bookingData.totalPrice,
         namaPenumpang: currentUser?.namaLengkap,
         noHpPenumpang: currentUser?.noHp,

@@ -519,6 +519,7 @@ const AdminPanelPage = () => {
                     <th>Rute</th>
                     <th>Tanggal</th>
                     <th>Kursi</th>
+                    <th>No. Kursi</th>
                     <th>Total</th>
                     <th>Status</th>
                     <th>Tgl. Booking</th>
@@ -536,6 +537,7 @@ const AdminPanelPage = () => {
                         <td>{booking.origin} → {booking.destination}</td>
                         <td>{formatDate(booking.date)}</td>
                         <td>{booking.seats}</td>
+                        <td>{booking.selectedSeats && booking.selectedSeats.length > 0 ? booking.selectedSeats.join(', ') : '-'}</td>
                         <td>{formatCurrency(booking.totalPrice)}</td>
                         <td>{getStatusBadge(booking.status)}</td>
                         <td>{formatDate(booking.bookingDate)}</td>
