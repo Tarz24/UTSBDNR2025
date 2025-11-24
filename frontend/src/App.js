@@ -1,18 +1,18 @@
-import './App.css';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { initializeDummyData } from './utils/dataManager';
-import HomePage from './pages/HomePage';
-import SearchPage from './pages/SearchPage';
-import SeatSelectionPage from './pages/SeatSelectionPage';
-import MyTicketPage from './pages/MyTicketPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ProfileUserPage from './pages/ProfileUserPage';
-import AdminPanelPage from './pages/AdminPanelPage';
+import "./App.css"
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import { AuthProvider } from "./context/AuthContext"
+import { initializeDummyData } from "./utils/dataManager"
+import HomePage from "./pages/HomePage"
+import SearchPage from "./pages/SearchPage"
+import SeatSelectionPage from "./pages/SeatSelectionPage"
+import MyTicketPage from "./pages/MyTicketPage"
+import LoginPage from "./pages/LoginPage"
+import RegisterPage from "./pages/RegisterPage"
+import ProfileUserPage from "./pages/ProfileUserPage"
+import AdminPanelPage from "./pages/AdminPanelPage"
 
 // Initialize dummy data on first load
-initializeDummyData();
+initializeDummyData()
 
 function App() {
   return (
@@ -32,7 +32,7 @@ function App() {
         </div>
       </Router>
     </AuthProvider>
-  );
+  )
 }
 
-export default App;
+export default App

@@ -56,9 +56,9 @@ function SearchPage() {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const base = process.env.REACT_APP_API_URL || 'http://localhost:3000/api'
+        const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
         const res = await fetch(`${base}/jadwal`)
-        
+
         if (res.ok) {
           const schedules = await res.json()
           const locations = new Set()
@@ -69,10 +69,10 @@ function SearchPage() {
           setAvailableLocations(Array.from(locations).sort())
         }
       } catch (error) {
-        console.error('Error fetching locations:', error)
+        console.error("Error fetching locations:", error)
       }
     }
-    
+
     fetchLocations()
   }, [])
 
@@ -84,20 +84,20 @@ function SearchPage() {
       setIsLoadingSchedules(true)
 
       try {
-        const base = process.env.REACT_APP_API_URL || 'http://localhost:3000/api'
+        const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
         const res = await fetch(`${base}/jadwal`)
-        
+
         if (res.ok) {
           const allSchedules = await res.json()
-          
+
           // Filter schedules berdasarkan search params
           const filtered = allSchedules.filter(schedule => {
             const matchOrigin = !searchParams.berangkatDari || schedule.origin === searchParams.berangkatDari
             const matchDestination = !searchParams.tujuanKe || schedule.destination === searchParams.tujuanKe
             const matchDate = !searchParams.tanggalPergi || schedule.date === searchParams.tanggalPergi
-            const matchStatus = schedule.status === 'active'
+            const matchStatus = schedule.status === "active"
             const hasSeats = schedule.availableSeats > 0
-            
+
             return matchOrigin && matchDestination && matchDate && matchStatus && hasSeats
           })
 
@@ -106,11 +106,11 @@ function SearchPage() {
             id: schedule._id || schedule.id,
             dari: schedule.origin,
             tujuan: schedule.destination,
-            pool: schedule.origin.split(', ')[1] || schedule.origin,
-            tanggal: new Date(schedule.date).toLocaleDateString('id-ID', { 
-              day: 'numeric', 
-              month: 'long', 
-              year: 'numeric' 
+            pool: schedule.origin.split(", ")[1] || schedule.origin,
+            tanggal: new Date(schedule.date).toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
             }),
             jam: schedule.time,
             kursiTersedia: schedule.availableSeats,
@@ -122,7 +122,7 @@ function SearchPage() {
           setJadwalPergi(transformedSchedules)
         }
       } catch (error) {
-        console.error('Error fetching schedules:', error)
+        console.error("Error fetching schedules:", error)
       } finally {
         setIsLoadingSchedules(false)
       }
@@ -166,8 +166,8 @@ function SearchPage() {
     navigate("/seat-selection", {
       state: {
         schedule: selectedJadwalPergi,
-        searchParams: searchParams
-      }
+        searchParams: searchParams,
+      },
     })
   }
 
