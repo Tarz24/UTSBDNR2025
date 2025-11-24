@@ -17,14 +17,26 @@ function ProfileUserPage() {
     }
   }, [isLoggedIn, navigate]);
 
-  // Load booking history dari localStorage
+  // Load booking history dari backend
   const [bookingHistory, setBookingHistory] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
 
   useEffect(() => {
-    if (currentUser) {
-      const userBookings = getUserBookings();
-      setBookingHistory(userBookings);
-    }
+    const loadBookings = async () => {
+      if (currentUser) {
+        setLoadingBookings(true);
+        try {
+          const userBookings = await getUserBookings();
+          setBookingHistory(userBookings);
+        } catch (error) {
+          console.error('Error loading bookings:', error);
+        } finally {
+          setLoadingBookings(false);
+        }
+      }
+    };
+
+    loadBookings();
   }, [currentUser, getUserBookings]);
 
   // State untuk modal edit profile
@@ -82,7 +94,7 @@ function ProfileUserPage() {
     setShowEditModal(true);
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     setEditError('');
     
     // Validasi
@@ -97,7 +109,7 @@ function ProfileUserPage() {
     }
 
     // Update menggunakan AuthContext
-    const result = updateProfile({
+    const result = await updateProfile({
       namaLengkap: editFormData.namaLengkap,
       noHp: editFormData.noHp
     });
@@ -126,7 +138,7 @@ function ProfileUserPage() {
     setShowPasswordModal(true);
   };
 
-  const handleSavePassword = () => {
+  const handleSavePassword = async () => {
     setPasswordError('');
     
     // Validasi
@@ -146,7 +158,7 @@ function ProfileUserPage() {
     }
 
     // Update menggunakan AuthContext
-    const result = changePassword(passwordFormData.oldPassword, passwordFormData.newPassword);
+    const result = await changePassword(passwordFormData.oldPassword, passwordFormData.newPassword);
 
     if (result.success) {
       console.log('✅ Password changed successfully!');

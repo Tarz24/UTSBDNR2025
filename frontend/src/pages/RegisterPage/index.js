@@ -107,7 +107,7 @@ function RegisterPage() {
     setRegisterError('');
 
     // Gunakan AuthContext register
-    const result = register({
+    const result = await register({
       namaLengkap: formData.namaLengkap,
       email: formData.email,
       noHp: formData.noHp,

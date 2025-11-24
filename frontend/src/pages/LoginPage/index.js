@@ -87,7 +87,7 @@ function LoginPage() {
     setLoginError('');
 
     // Gunakan AuthContext login
-    const result = login(formData.email, formData.password);
+    const result = await login(formData.email, formData.password);
 
     if (result.success) {
       // Login berhasil

@@ -28,9 +28,9 @@ function Navbar() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('Apakah Anda yakin ingin logout?')) {
-      logout();
+      await logout();
       setShowUserMenu(false);
       navigate('/');
     }

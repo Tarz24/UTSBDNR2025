@@ -124,9 +124,9 @@ const AdminPanelPage = () => {
     setShowAdminMenu(false);
   };
 
-  const handleLogoutAdmin = () => {
+  const handleLogoutAdmin = async () => {
     if (window.confirm('Apakah Anda yakin ingin logout?')) {
-      logout();
+      await logout();
       setShowAdminMenu(false);
       navigate('/login');
     }
