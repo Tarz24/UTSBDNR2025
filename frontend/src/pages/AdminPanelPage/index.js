@@ -340,14 +340,26 @@ const AdminPanelPage = () => {
     return <span className={`status-badge ${config.className}`}>{config.label}</span>
   }
 
-  const handleUpdateBookingStatus = async (bookingId, newStatus) => {
-    const result = await updateBookingStatus(bookingId, newStatus)
+  const handleUpdateBookingStatus = async (booking, newStatus) => {
+    console.log("[handleUpdateBookingStatus] Called with:", { booking, newStatus })
+    console.log("[handleUpdateBookingStatus] Using _id:", booking._id)
+    
+    try {
+      // Gunakan _id (MongoDB ObjectId) untuk API call, bukan display ID (kode_booking)
+      const result = await updateBookingStatus(booking._id, newStatus)
+      console.log("[handleUpdateBookingStatus] Result:", result)
 
-    if (result.success) {
-      await loadData()
-      alert(`Status booking berhasil diubah menjadi ${newStatus}!`)
-    } else {
-      alert(result.message || "Gagal mengubah status booking!")
+      if (result.success) {
+        console.log("[handleUpdateBookingStatus] Reloading data...")
+        await loadData()
+        alert(`Status booking berhasil diubah menjadi ${newStatus}!`)
+      } else {
+        console.error("[handleUpdateBookingStatus] Failed:", result.message)
+        alert(result.message || "Gagal mengubah status booking!")
+      }
+    } catch (error) {
+      console.error("[handleUpdateBookingStatus] Exception:", error)
+      alert(`Error: ${error.message}`)
     }
   }
 
@@ -561,16 +573,28 @@ const AdminPanelPage = () => {
                           <div className="action-buttons">
                             {booking.status === "pending" && (
                               <>
-                                <button className="action-btn confirm-btn" onClick={() => handleUpdateBookingStatus(booking.id, "confirmed")} title="Konfirmasi">
+                                <button className="action-btn confirm-btn" onClick={() => {
+                                  console.log("🔍 Booking object:", booking);
+                                  console.log("🔍 Sending _id:", booking._id);
+                                  handleUpdateBookingStatus(booking, "confirmed");
+                                }} title="Konfirmasi">
                                   ✓
                                 </button>
-                                <button className="action-btn cancel-btn" onClick={() => handleUpdateBookingStatus(booking.id, "cancelled")} title="Batalkan">
+                                <button className="action-btn cancel-btn" onClick={() => {
+                                  console.log("🔍 Booking object:", booking);
+                                  console.log("🔍 Sending _id:", booking._id);
+                                  handleUpdateBookingStatus(booking, "cancelled");
+                                }} title="Batalkan">
                                   ✕
                                 </button>
                               </>
                             )}
                             {booking.status === "confirmed" && (
-                              <button className="action-btn complete-btn" onClick={() => handleUpdateBookingStatus(booking.id, "completed")} title="Tandai Selesai">
+                              <button className="action-btn complete-btn" onClick={() => {
+                                console.log("🔍 Booking object:", booking);
+                                console.log("🔍 Sending _id:", booking._id);
+                                handleUpdateBookingStatus(booking, "completed");
+                              }} title="Tandai Selesai">
                                 ✓✓
                               </button>
                             )}

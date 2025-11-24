@@ -301,17 +301,22 @@ export const getAllBookings = async () => {
     const res = await fetch(`${base}/pemesanan`)
     if (res.ok) {
       const data = await res.json()
+      console.log("📦 [getAllBookings] Raw data from API:", data)
+
       if (Array.isArray(data)) {
-        return data.map(item => {
+        const mapped = data.map(item => {
           // map backend pemesanan shape to frontend booking shape
           const user = item.user || {}
           const jadwal = item.jadwal || {}
-          const tanggal = item.tanggal_pesan || item.bookingDate || item.createdAt || null
+          const tanggal = item.date || item.bookingDate || item.createdAt || null
           const dateStr = tanggal ? new Date(tanggal).toISOString().split("T")[0] : item.date || ""
           const timeStr = jadwal.jam_berangkat ? new Date(jadwal.jam_berangkat).toTimeString().slice(0, 5) : item.time || ""
 
-          return {
-            id: item.kode_booking || (item.id && String(item.id)) || item._id,
+          const mappedItem = {
+            // PENTING: Simpan _id asli dari MongoDB untuk update operations
+            _id: item._id,
+            // Display ID menggunakan kode_booking jika ada, fallback ke _id
+            id: item.kode_booking || item.id || item._id,
             userId: user._id || item.userId || null,
             userName: user.namaLengkap || user.nama || item.userName || user.name || "",
             email: user.email || item.userEmail || "",
@@ -325,9 +330,14 @@ export const getAllBookings = async () => {
             price: item.total_harga || item.price || 0,
             totalPrice: item.total_harga || item.totalPrice || 0,
             status: item.status || item.status_pembayaran || "pending",
-            bookingDate: tanggal,
+            bookingDate: item.bookingDate,
           }
+
+          console.log("📦 [getAllBookings] Mapped item:", mappedItem)
+          return mappedItem
         })
+
+        return mapped
       }
     } else {
       console.warn("getAllBookings API returned", res.status)
@@ -588,6 +598,8 @@ export const addSchedule = async scheduleData => {
 export const updateBookingStatus = async (bookingId, newStatus) => {
   const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
 
+  console.log("[updateBookingStatus] Starting update:", { bookingId, newStatus })
+
   // Use backend convenience endpoints when possible
   try {
     let url
@@ -595,6 +607,8 @@ export const updateBookingStatus = async (bookingId, newStatus) => {
     else if (newStatus === "cancelled") url = `${base}/pemesanan/${bookingId}/cancel`
     else if (newStatus === "completed") url = `${base}/pemesanan/${bookingId}/complete`
     else url = `${base}/pemesanan/${bookingId}/status`
+
+    console.log("[updateBookingStatus] Calling API:", url)
 
     const body = url.endsWith("/status") ? JSON.stringify({ status: newStatus }) : undefined
 
@@ -604,35 +618,29 @@ export const updateBookingStatus = async (bookingId, newStatus) => {
       body,
     })
 
+    console.log("[updateBookingStatus] API Response status:", res.status)
+
     const respBody = await (async () => {
       try {
         return await res.json()
       } catch (e) {
+        console.warn("[updateBookingStatus] Failed to parse response body:", e)
         return null
       }
     })()
 
+    console.log("[updateBookingStatus] API Response body:", respBody)
+
     if (res.ok) {
+      console.log("[updateBookingStatus] ✅ API Success")
       return { success: true, message: "Status booking berhasil diupdate (API)", booking: respBody }
+    } else {
+      console.error("[updateBookingStatus] ❌ API Failed:", res.status, respBody)
+      return { success: false, message: `API error: ${res.status} - ${respBody?.message || "Unknown error"}`, booking: null }
     }
   } catch (apiError) {
-    console.warn("API updateBookingStatus failed, falling back to localStorage:", apiError)
-  }
-
-  // Fallback to localStorage update
-  try {
-    const bookings = JSON.parse(localStorage.getItem("bookings") || "[]")
-    const index = bookings.findIndex(b => b.id === bookingId)
-    if (index === -1) {
-      return { success: false, message: "Booking tidak ditemukan!" }
-    }
-    bookings[index].status = newStatus
-    bookings[index].updatedAt = new Date().toISOString()
-    localStorage.setItem("bookings", JSON.stringify(bookings))
-    return { success: true, message: "Status booking berhasil diupdate! (local fallback)", booking: bookings[index] }
-  } catch (error) {
-    console.error("Error updating booking status (fallback):", error)
-    return { success: false, message: "Terjadi kesalahan saat update status" }
+    console.error("[updateBookingStatus] ❌ API Exception:", apiError)
+    return { success: false, message: `API exception: ${apiError.message}`, booking: null }
   }
 }
 

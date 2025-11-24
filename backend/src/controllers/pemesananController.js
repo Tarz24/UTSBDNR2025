@@ -248,16 +248,96 @@ const updatePaymentStatus = async (req, res) => {
 
 // Convenience endpoints
 const confirmPemesanan = async (req, res) => {
-  req.body = { status_pembayaran: "success", status: "confirmed" }
-  return updatePaymentStatus(req, res)
+  const idParam = req.params.id
+  console.log("[confirmPemesanan] Called with ID:", idParam)
+  try {
+    const updates = { status_pembayaran: "success", status: "confirmed" }
+    console.log("[confirmPemesanan] Updates:", updates)
+    
+    let updated
+    if (mongoose.Types.ObjectId.isValid(idParam)) {
+      console.log("[confirmPemesanan] Using ObjectId query")
+      updated = await PemesananModel.findByIdAndUpdate(idParam, updates, { new: true, runValidators: true })
+    } else {
+      console.log("[confirmPemesanan] Using kode_booking query")
+      updated = await PemesananModel.findOneAndUpdate({ kode_booking: idParam }, updates, { new: true, runValidators: true })
+    }
+    
+    console.log("[confirmPemesanan] Updated document:", updated)
+    
+    if (!updated) {
+      console.log("[confirmPemesanan] ❌ Document not found")
+      return res.status(404).json({ message: "Pemesanan tidak ditemukan" })
+    }
+    
+    console.log("[confirmPemesanan] ✅ Success")
+    res.status(200).json(updated)
+  } catch (error) {
+    console.error("[confirmPemesanan] ❌ Error:", error)
+    res.status(500).json({ message: "Internal server error", details: error.message })
+  }
 }
+
 const cancelPemesanan = async (req, res) => {
-  req.body = { status_pembayaran: "cancelled", status: "cancelled" }
-  return updatePaymentStatus(req, res)
+  const idParam = req.params.id
+  console.log("[cancelPemesanan] Called with ID:", idParam)
+  try {
+    const updates = { status_pembayaran: "cancelled", status: "cancelled" }
+    console.log("[cancelPemesanan] Updates:", updates)
+    
+    let updated
+    if (mongoose.Types.ObjectId.isValid(idParam)) {
+      console.log("[cancelPemesanan] Using ObjectId query")
+      updated = await PemesananModel.findByIdAndUpdate(idParam, updates, { new: true, runValidators: true })
+    } else {
+      console.log("[cancelPemesanan] Using kode_booking query")
+      updated = await PemesananModel.findOneAndUpdate({ kode_booking: idParam }, updates, { new: true, runValidators: true })
+    }
+    
+    console.log("[cancelPemesanan] Updated document:", updated)
+    
+    if (!updated) {
+      console.log("[cancelPemesanan] ❌ Document not found")
+      return res.status(404).json({ message: "Pemesanan tidak ditemukan" })
+    }
+    
+    console.log("[cancelPemesanan] ✅ Success")
+    res.status(200).json(updated)
+  } catch (error) {
+    console.error("[cancelPemesanan] ❌ Error:", error)
+    res.status(500).json({ message: "Internal server error", details: error.message })
+  }
 }
+
 const completePemesanan = async (req, res) => {
-  req.body = { status_pembayaran: "success", status: "completed" }
-  return updatePaymentStatus(req, res)
+  const idParam = req.params.id
+  console.log("[completePemesanan] Called with ID:", idParam)
+  try {
+    const updates = { status_pembayaran: "success", status: "completed" }
+    console.log("[completePemesanan] Updates:", updates)
+    
+    let updated
+    if (mongoose.Types.ObjectId.isValid(idParam)) {
+      console.log("[completePemesanan] Using ObjectId query")
+      updated = await PemesananModel.findByIdAndUpdate(idParam, updates, { new: true, runValidators: true })
+    } else {
+      console.log("[completePemesanan] Using kode_booking query")
+      updated = await PemesananModel.findOneAndUpdate({ kode_booking: idParam }, updates, { new: true, runValidators: true })
+    }
+    
+    console.log("[completePemesanan] Updated document:", updated)
+    
+    if (!updated) {
+      console.log("[completePemesanan] ❌ Document not found")
+      return res.status(404).json({ message: "Pemesanan tidak ditemukan" })
+    }
+    
+    console.log("[completePemesanan] ✅ Success")
+    res.status(200).json(updated)
+  } catch (error) {
+    console.error("[completePemesanan] ❌ Error:", error)
+    res.status(500).json({ message: "Internal server error", details: error.message })
+  }
 }
 
 module.exports = {
