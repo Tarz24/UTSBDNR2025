@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI, isAuthenticated } from '../services/api';
+import { transformUserFromBackend, transformUserToBackend } from '../utils/dataTransformer';
 
 const AuthContext = createContext();
 
@@ -15,201 +17,221 @@ export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Initialize: Check localStorage on mount
+  // Initialize: Check token and verify auth
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
+    const checkAuth = async () => {
       try {
-        const user = JSON.parse(storedUser);
-        setCurrentUser(user);
-        setIsLoggedIn(true);
+        if (isAuthenticated()) {
+          // Verify token by fetching profile
+          const response = await authAPI.getProfile();
+          if (response.success && response.data) {
+            const user = transformUserFromBackend(response.data);
+            setCurrentUser(user);
+            setIsLoggedIn(true);
+          } else {
+            // Token invalid, clear auth
+            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
+          }
+        }
       } catch (error) {
-        console.error('Error parsing stored user:', error);
+        console.error('Error verifying auth:', error);
+        // Token invalid, clear auth
+        localStorage.removeItem('token');
         localStorage.removeItem('currentUser');
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   // Register new user
-  const register = (userData) => {
+  const register = async (userData) => {
     try {
-      // Get existing users from localStorage
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      setLoading(true);
       
-      // Check if email already exists
-      const emailExists = existingUsers.some(user => user.email === userData.email);
-      if (emailExists) {
-        return { success: false, message: 'Email sudah terdaftar!' };
+      // Transform data to backend format
+      const backendData = transformUserToBackend(userData);
+      
+      // Call backend API
+      const response = await authAPI.register(backendData);
+      
+      if (response.success) {
+        return { 
+          success: true, 
+          message: response.message || 'Registrasi berhasil!' 
+        };
+      } else {
+        return { 
+          success: false, 
+          message: response.message || 'Registrasi gagal!' 
+        };
       }
-
-      // Check if phone already exists
-      const phoneExists = existingUsers.some(user => user.noHp === userData.noHp);
-      if (phoneExists) {
-        return { success: false, message: 'Nomor HP sudah terdaftar!' };
-      }
-
-      // Create new user with generated ID
-      const newUser = {
-        id: `USER${String(existingUsers.length + 1).padStart(3, '0')}`,
-        namaLengkap: userData.namaLengkap,
-        email: userData.email,
-        noHp: userData.noHp,
-        password: userData.password, // In production, this should be hashed!
-        role: 'user',
-        createdAt: new Date().toISOString(),
-        bookings: []
-      };
-
-      // Add to users array
-      existingUsers.push(newUser);
-      localStorage.setItem('users', JSON.stringify(existingUsers));
-
-      return { success: true, message: 'Registrasi berhasil!' };
     } catch (error) {
       console.error('Error during registration:', error);
-      return { success: false, message: 'Terjadi kesalahan saat registrasi' };
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Terjadi kesalahan saat registrasi' 
+      };
+    } finally {
+      setLoading(false);
     }
   };
 
   // Login user
-  const login = (email, password) => {
+  const login = async (email, password) => {
     try {
-      // Get users from localStorage
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      setLoading(true);
       
-      // Find user with matching credentials
-      const user = users.find(u => u.email === email && u.password === password);
+      // Call backend API
+      const response = await authAPI.login(email, password);
       
-      if (!user) {
-        return { success: false, message: 'Email atau password salah!' };
+      if (response.success && response.data) {
+        // Transform user data from backend
+        const user = transformUserFromBackend(response.data.user);
+        
+        // Store current user (token already handled by authAPI.login)
+        setCurrentUser(user);
+        setIsLoggedIn(true);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+
+        return { 
+          success: true, 
+          message: response.message || 'Login berhasil!', 
+          user 
+        };
+      } else {
+        return { 
+          success: false, 
+          message: response.message || 'Login gagal!' 
+        };
       }
-
-      // Set current user (without password)
-      const userWithoutPassword = {
-        id: user.id,
-        namaLengkap: user.namaLengkap,
-        email: user.email,
-        noHp: user.noHp,
-        role: user.role,
-        createdAt: user.createdAt
-      };
-
-      setCurrentUser(userWithoutPassword);
-      setIsLoggedIn(true);
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-
-      return { success: true, message: 'Login berhasil!', user: userWithoutPassword };
     } catch (error) {
       console.error('Error during login:', error);
-      return { success: false, message: 'Terjadi kesalahan saat login' };
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Terjadi kesalahan saat login' 
+      };
+    } finally {
+      setLoading(false);
     }
   };
 
   // Logout user
-  const logout = () => {
-    setCurrentUser(null);
-    setIsLoggedIn(false);
-    localStorage.removeItem('currentUser');
+  const logout = async () => {
+    try {
+      // Call backend API (optional, backend may not have logout endpoint)
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      // Clear local state and storage
+      setCurrentUser(null);
+      setIsLoggedIn(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('currentUser');
+    }
   };
 
   // Update user profile
-  const updateProfile = (updates) => {
+  const updateProfile = async (updates) => {
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const userIndex = users.findIndex(u => u.id === currentUser.id);
+      setLoading(true);
       
-      if (userIndex === -1) {
-        return { success: false, message: 'User tidak ditemukan!' };
+      // Transform data to backend format
+      const backendData = transformUserToBackend(updates);
+      
+      // Call backend API
+      const response = await authAPI.updateProfile(backendData);
+      
+      if (response.success && response.data) {
+        // Transform updated user data from backend
+        const updatedUser = transformUserFromBackend(response.data);
+        
+        // Update local state
+        setCurrentUser(updatedUser);
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+        return { 
+          success: true, 
+          message: response.message || 'Profile berhasil diupdate!' 
+        };
+      } else {
+        return { 
+          success: false, 
+          message: response.message || 'Gagal update profile!' 
+        };
       }
-
-      // Update user data
-      users[userIndex] = {
-        ...users[userIndex],
-        ...updates,
-        updatedAt: new Date().toISOString()
-      };
-
-      localStorage.setItem('users', JSON.stringify(users));
-
-      // Update current user
-      const updatedUser = {
-        id: users[userIndex].id,
-        namaLengkap: users[userIndex].namaLengkap,
-        email: users[userIndex].email,
-        noHp: users[userIndex].noHp,
-        role: users[userIndex].role,
-        createdAt: users[userIndex].createdAt
-      };
-
-      setCurrentUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-
-      return { success: true, message: 'Profile berhasil diupdate!' };
     } catch (error) {
       console.error('Error updating profile:', error);
-      return { success: false, message: 'Terjadi kesalahan saat update profile' };
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Terjadi kesalahan saat update profile' 
+      };
+    } finally {
+      setLoading(false);
     }
   };
 
   // Change password
-  const changePassword = (oldPassword, newPassword) => {
+  const changePassword = async (oldPassword, newPassword) => {
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const userIndex = users.findIndex(u => u.id === currentUser.id);
+      setLoading(true);
       
-      if (userIndex === -1) {
-        return { success: false, message: 'User tidak ditemukan!' };
+      // Call backend API
+      const response = await authAPI.changePassword(oldPassword, newPassword);
+      
+      if (response.success) {
+        return { 
+          success: true, 
+          message: response.message || 'Password berhasil diubah!' 
+        };
+      } else {
+        return { 
+          success: false, 
+          message: response.message || 'Gagal ubah password!' 
+        };
       }
-
-      // Check old password
-      if (users[userIndex].password !== oldPassword) {
-        return { success: false, message: 'Password lama salah!' };
-      }
-
-      // Update password
-      users[userIndex].password = newPassword;
-      users[userIndex].updatedAt = new Date().toISOString();
-      localStorage.setItem('users', JSON.stringify(users));
-
-      return { success: true, message: 'Password berhasil diubah!' };
     } catch (error) {
       console.error('Error changing password:', error);
-      return { success: false, message: 'Terjadi kesalahan saat ubah password' };
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Terjadi kesalahan saat ubah password' 
+      };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Get user bookings
-  const getUserBookings = () => {
+  // Get user bookings - Now handled by dataManager, kept for backward compatibility
+  const getUserBookings = async () => {
+    console.warn('getUserBookings from AuthContext is deprecated. Use dataManager.getUserBookings() instead.');
     try {
-      const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-      return bookings.filter(booking => booking.userId === currentUser?.id);
+      // Import dynamically to avoid circular dependency
+      const { getUserBookings } = await import('../utils/dataManager');
+      return await getUserBookings();
     } catch (error) {
       console.error('Error getting user bookings:', error);
       return [];
     }
   };
 
-  // Add booking for user
-  const addBooking = (bookingData) => {
+  // Add booking for user - Now handled by dataManager, kept for backward compatibility
+  const addBooking = async (bookingData) => {
+    console.warn('addBooking from AuthContext is deprecated. Use dataManager.addBooking() instead.');
     try {
-      const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+      // Import dynamically to avoid circular dependency
+      const { addBooking } = await import('../utils/dataManager');
       
-      const newBooking = {
-        id: `BK${String(bookings.length + 1).padStart(3, '0')}`,
-        userId: currentUser.id,
-        userName: currentUser.namaLengkap,
-        userEmail: currentUser.email,
-        userPhone: currentUser.noHp,
-        ...bookingData,
-        status: 'pending',
-        bookingDate: new Date().toISOString()
-      };
+      if (!currentUser?.id) {
+        return { success: false, message: 'User tidak terautentikasi!' };
+      }
 
-      bookings.push(newBooking);
-      localStorage.setItem('bookings', JSON.stringify(bookings));
-
-      return { success: true, message: 'Booking berhasil!', booking: newBooking };
+      // dataManager.addBooking requires userId and scheduleId
+      const result = await addBooking(bookingData, currentUser.id, bookingData.scheduleId);
+      return result;
     } catch (error) {
       console.error('Error adding booking:', error);
       return { success: false, message: 'Terjadi kesalahan saat booking' };
