@@ -7,6 +7,8 @@ function JadwalSection() {
   const navigate = useNavigate()
   const [jadwalData, setJadwalData] = useState([])
   const [loading, setLoading] = useState(true)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const cardsPerView = 4
 
   useEffect(() => {
     const fetchTodaySchedules = async () => {
@@ -28,8 +30,8 @@ function JadwalSection() {
             filteredSchedules = schedules.filter(schedule => schedule.date >= today && schedule.status === "active" && (schedule.availableSeats || schedule.kursi_tersedia) > 0)
           }
 
-          // Transform and limit to 4
-          const transformedSchedules = filteredSchedules.slice(0, 4).map(schedule => ({
+          // Transform ALL schedules (no limit)
+          const transformedSchedules = filteredSchedules.map(schedule => ({
             id: schedule.id || schedule._id,
             tanggal: new Date(schedule.date).toLocaleDateString("id-ID", { day: "numeric", month: "long" }),
             tahun: new Date(schedule.date).getFullYear().toString(),
@@ -55,8 +57,6 @@ function JadwalSection() {
   }, [])
 
   const handleJadwalClick = jadwal => {
-    // Navigate ke SearchPage dengan pre-filled data
-    // Gunakan format lengkap origin dan destination agar match dengan localStorage
     navigate("/search", {
       state: {
         searchParams: {
@@ -69,6 +69,16 @@ function JadwalSection() {
       },
     })
   }
+
+  const handlePrev = () => {
+    setCurrentIndex(prev => Math.max(0, prev - 1))
+  }
+
+  const handleNext = () => {
+    setCurrentIndex(prev => Math.min(jadwalData.length - cardsPerView, prev + 1))
+  }
+
+  const visibleSchedules = jadwalData.slice(currentIndex, currentIndex + cardsPerView)
 
   // Show loading state
   if (loading) {
@@ -100,16 +110,22 @@ function JadwalSection() {
         <h2 className="section-title">Jadwal Tersedia Hari Ini</h2>
 
         <div className="jadwal-carousel">
-          {jadwalData.map((jadwal, index) => (
-            <JadwalCard key={index} tanggal={jadwal.tanggal} tahun={jadwal.tahun} rute={jadwal.rute} harga={jadwal.harga} diskon={jadwal.diskon} onClick={() => handleJadwalClick(jadwal)} />
+          {visibleSchedules.map((jadwal, index) => (
+            <JadwalCard key={jadwal.id} tanggal={jadwal.tanggal} tahun={jadwal.tahun} rute={jadwal.rute} harga={jadwal.harga} diskon={jadwal.diskon} onClick={() => handleJadwalClick(jadwal)} />
           ))}
         </div>
 
-        {/* Navigation Arrows */}
-        <div className="carousel-navigation">
-          <button className="carousel-btn prev">❮</button>
-          <button className="carousel-btn next">❯</button>
-        </div>
+        {/* Navigation Arrows - Only show if more than 4 schedules */}
+        {jadwalData.length > cardsPerView && (
+          <div className="carousel-navigation">
+            <button className="carousel-btn prev" onClick={handlePrev} disabled={currentIndex === 0}>
+              ❮
+            </button>
+            <button className="carousel-btn next" onClick={handleNext} disabled={currentIndex >= jadwalData.length - cardsPerView}>
+              ❯
+            </button>
+          </div>
+        )}
       </div>
     </section>
   )
