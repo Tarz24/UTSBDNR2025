@@ -1,11 +1,39 @@
-// Initialize dummy data in localStorage
-export const initializeDummyData = () => {
-  // Check if data already exists
-  if (localStorage.getItem('dataInitialized') === 'true') {
-    return;
-  }
+/**
+ * Data Manager Utility
+ * 
+ * Purpose: Business logic layer untuk manage data
+ * Menggunakan Backend API + Data Transformer
+ * 
+ * Changes from localStorage to API:
+ * - All functions now return Promises (async)
+ * - Data format automatically transformed by dataTransformer
+ * - Components tetap pakai format frontend yang sama
+ */
 
-  // Dummy Users
+import { jadwalAPI, pemesananAPI } from '../services/api';
+import {
+  transformScheduleFromBackend,
+  transformSchedulesFromBackend,
+  transformScheduleToBackend,
+  transformBookingFromBackend,
+  transformBookingsFromBackend,
+  transformBookingToBackend
+} from './dataTransformer';
+
+// ==========================================
+// LEGACY FUNCTIONS (Not used with backend)
+// ==========================================
+
+/**
+ * Initialize dummy data in localStorage
+ * NOTE: Tidak diperlukan saat pakai backend
+ * Data akan diambil langsung dari MongoDB
+ */
+export const initializeDummyData = () => {
+  console.warn('⚠️ initializeDummyData() tidak diperlukan saat menggunakan backend API');
+  console.log('💡 Data akan diambil langsung dari MongoDB database');
+  
+  // Dummy Users for reference only
   const dummyUsers = [
     {
       id: 'USER001',
@@ -219,182 +247,309 @@ export const initializeDummyData = () => {
     }
   ];
 
-  // Save to localStorage
-  localStorage.setItem('users', JSON.stringify(dummyUsers));
-  localStorage.setItem('schedules', JSON.stringify(dummySchedules));
-  localStorage.setItem('bookings', JSON.stringify(dummyBookings));
-  localStorage.setItem('dataInitialized', 'true');
-
-  console.log('✅ Dummy data initialized successfully!');
+  console.log('ℹ️ Dummy data reference (for development only)');
   console.log('👤 Users:', dummyUsers.length);
   console.log('📅 Schedules:', dummySchedules.length);
   console.log('🎫 Bookings:', dummyBookings.length);
 };
 
-// Clear all data (for testing)
+/**
+ * Clear all data
+ * NOTE: Sekarang hanya clear localStorage token/cache
+ * Backend data tidak terpengaruh
+ */
 export const clearAllData = () => {
-  localStorage.removeItem('users');
-  localStorage.removeItem('schedules');
-  localStorage.removeItem('bookings');
+  localStorage.removeItem('token');
   localStorage.removeItem('currentUser');
-  localStorage.removeItem('dataInitialized');
-  console.log('🗑️ All data cleared!');
+  console.log('🗑️ Local cache cleared! (Backend data tetap aman di database)');
 };
 
-// Get all users
-export const getAllUsers = () => {
-  try {
-    return JSON.parse(localStorage.getItem('users') || '[]');
-  } catch (error) {
-    console.error('Error getting users:', error);
-    return [];
-  }
+/**
+ * Get all users
+ * NOTE: Fungsi ini untuk admin saja, harus melalui Admin API
+ * @returns {Promise<Array>} Array of users
+ */
+export const getAllUsers = async () => {
+  console.warn('⚠️ getAllUsers() sekarang harus melalui Admin API endpoint');
+  return [];
 };
 
-// Get all schedules
-export const getAllSchedules = () => {
+// ==========================================
+// SCHEDULES API
+// ==========================================
+
+/**
+ * Get all schedules (ADMIN only)
+ * @returns {Promise<Array>} Array of schedules in frontend format
+ */
+export const getAllSchedules = async () => {
   try {
-    return JSON.parse(localStorage.getItem('schedules') || '[]');
+    const response = await jadwalAPI.getAll();
+    return transformSchedulesFromBackend(response.data);
   } catch (error) {
     console.error('Error getting schedules:', error);
     return [];
   }
 };
 
-// Get all bookings
-export const getAllBookings = () => {
+/**
+ * Get active schedules (available for booking)
+ * Public endpoint - tidak perlu login
+ * @returns {Promise<Array>} Array of active schedules
+ */
+export const getActiveSchedules = async () => {
   try {
-    return JSON.parse(localStorage.getItem('bookings') || '[]');
+    const response = await jadwalAPI.getActive();
+    return transformSchedulesFromBackend(response.data);
+  } catch (error) {
+    console.error('Error getting active schedules:', error);
+    return [];
+  }
+};
+
+/**
+ * Search schedules by origin, destination, and date
+ * Public endpoint - tidak perlu login
+ * @param {String} origin - Origin location (e.g., "BANDUNG")
+ * @param {String} destination - Destination location (e.g., "JAKARTA")
+ * @param {String} date - Date in YYYY-MM-DD format
+ * @returns {Promise<Array>} Array of matching schedules
+ */
+export const searchSchedules = async (origin, destination, date) => {
+  try {
+    const params = {};
+    if (origin) params.origin = origin;
+    if (destination) params.destination = destination;
+    if (date) params.date = date;
+    
+    const response = await jadwalAPI.search(params);
+    return transformSchedulesFromBackend(response.data);
+  } catch (error) {
+    console.error('Error searching schedules:', error);
+    return [];
+  }
+};
+
+/**
+ * Get schedule by ID
+ * @param {String} scheduleId - MongoDB ObjectId
+ * @returns {Promise<Object|null>} Single schedule object
+ */
+export const getScheduleById = async (scheduleId) => {
+  try {
+    const response = await jadwalAPI.getById(scheduleId);
+    return transformScheduleFromBackend(response.data);
+  } catch (error) {
+    console.error('Error getting schedule:', error);
+    return null;
+  }
+};
+
+/**
+ * Add new schedule (ADMIN only)
+ * @param {Object} scheduleData - Schedule data in frontend format
+ * @returns {Promise<Object>} { success, message, schedule }
+ */
+export const addSchedule = async (scheduleData) => {
+  try {
+    // Transform frontend format to backend format
+    const backendData = transformScheduleToBackend(scheduleData);
+    
+    const response = await jadwalAPI.create(backendData);
+    const newSchedule = transformScheduleFromBackend(response.data);
+    
+    return { 
+      success: true, 
+      message: 'Jadwal berhasil ditambahkan!', 
+      schedule: newSchedule 
+    };
+  } catch (error) {
+    console.error('Error adding schedule:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Terjadi kesalahan saat tambah jadwal' 
+    };
+  }
+};
+
+/**
+ * Update schedule (ADMIN only)
+ * @param {String} scheduleId - MongoDB ObjectId
+ * @param {Object} updates - Updated data in frontend format
+ * @returns {Promise<Object>} { success, message }
+ */
+export const updateSchedule = async (scheduleId, updates) => {
+  try {
+    // Transform frontend format to backend format
+    const backendUpdates = transformScheduleToBackend(updates);
+    
+    await jadwalAPI.update(scheduleId, backendUpdates);
+    
+    return { 
+      success: true, 
+      message: 'Jadwal berhasil diupdate!' 
+    };
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Terjadi kesalahan saat update jadwal' 
+    };
+  }
+};
+
+/**
+ * Delete schedule (ADMIN only)
+ * @param {String} scheduleId - MongoDB ObjectId
+ * @returns {Promise<Object>} { success, message }
+ */
+export const deleteSchedule = async (scheduleId) => {
+  try {
+    await jadwalAPI.delete(scheduleId);
+    
+    return { 
+      success: true, 
+      message: 'Jadwal berhasil dihapus!' 
+    };
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Terjadi kesalahan saat hapus jadwal' 
+    };
+  }
+};
+
+// ==========================================
+// BOOKINGS API
+// ==========================================
+
+/**
+ * Get all bookings (ADMIN only)
+ * @returns {Promise<Array>} Array of bookings in frontend format
+ */
+export const getAllBookings = async () => {
+  try {
+    const response = await pemesananAPI.getAll();
+    return transformBookingsFromBackend(response.data);
   } catch (error) {
     console.error('Error getting bookings:', error);
     return [];
   }
 };
 
-// Get active schedules (available for booking)
-export const getActiveSchedules = () => {
-  const schedules = getAllSchedules();
-  const today = new Date().toISOString().split('T')[0];
-  
-  return schedules.filter(schedule => 
-    schedule.status === 'active' && 
-    schedule.date >= today &&
-    schedule.availableSeats > 0
-  );
-};
-
-// Search schedules
-export const searchSchedules = (origin, destination, date) => {
-  const schedules = getActiveSchedules();
-  
-  return schedules.filter(schedule => {
-    const matchOrigin = !origin || schedule.origin.toLowerCase().includes(origin.toLowerCase());
-    const matchDestination = !destination || schedule.destination.toLowerCase().includes(destination.toLowerCase());
-    const matchDate = !date || schedule.date === date;
-    
-    return matchOrigin && matchDestination && matchDate;
-  });
-};
-
-// Get schedule by ID
-export const getScheduleById = (scheduleId) => {
-  const schedules = getAllSchedules();
-  return schedules.find(schedule => schedule.id === scheduleId);
-};
-
-// Update schedule
-export const updateSchedule = (scheduleId, updates) => {
+/**
+ * Get user's bookings (authenticated user)
+ * @returns {Promise<Array>} Array of user's bookings
+ */
+export const getUserBookings = async () => {
   try {
-    const schedules = getAllSchedules();
-    const index = schedules.findIndex(s => s.id === scheduleId);
-    
-    if (index === -1) {
-      return { success: false, message: 'Jadwal tidak ditemukan!' };
-    }
+    const response = await pemesananAPI.getUserBookings();
+    return transformBookingsFromBackend(response.data);
+  } catch (error) {
+    console.error('Error getting user bookings:', error);
+    return [];
+  }
+};
 
-    schedules[index] = {
-      ...schedules[index],
-      ...updates,
-      updatedAt: new Date().toISOString()
+/**
+ * Add new booking
+ * @param {Object} bookingData - Booking data in frontend format
+ * @param {String} userId - MongoDB ObjectId of user
+ * @param {String} scheduleId - MongoDB ObjectId of jadwal
+ * @returns {Promise<Object>} { success, message, booking }
+ */
+export const addBooking = async (bookingData, userId, scheduleId) => {
+  try {
+    // Transform frontend format to backend format
+    const backendData = transformBookingToBackend(bookingData, userId, scheduleId);
+    
+    const response = await pemesananAPI.create(backendData);
+    const newBooking = transformBookingFromBackend(response.data);
+    
+    return { 
+      success: true, 
+      message: 'Booking berhasil dibuat!', 
+      booking: newBooking 
     };
-
-    localStorage.setItem('schedules', JSON.stringify(schedules));
-    return { success: true, message: 'Jadwal berhasil diupdate!' };
   } catch (error) {
-    console.error('Error updating schedule:', error);
-    return { success: false, message: 'Terjadi kesalahan saat update jadwal' };
-  }
-};
-
-// Delete schedule
-export const deleteSchedule = (scheduleId) => {
-  try {
-    const schedules = getAllSchedules();
-    const filteredSchedules = schedules.filter(s => s.id !== scheduleId);
-    
-    localStorage.setItem('schedules', JSON.stringify(filteredSchedules));
-    return { success: true, message: 'Jadwal berhasil dihapus!' };
-  } catch (error) {
-    console.error('Error deleting schedule:', error);
-    return { success: false, message: 'Terjadi kesalahan saat hapus jadwal' };
-  }
-};
-
-// Add schedule
-export const addSchedule = (scheduleData) => {
-  try {
-    const schedules = getAllSchedules();
-    
-    const newSchedule = {
-      id: `JDW${String(schedules.length + 1).padStart(3, '0')}`,
-      ...scheduleData,
-      availableSeats: scheduleData.seats,
-      status: 'active',
-      createdAt: new Date().toISOString()
+    console.error('Error creating booking:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Terjadi kesalahan saat membuat booking' 
     };
-
-    schedules.push(newSchedule);
-    localStorage.setItem('schedules', JSON.stringify(schedules));
-    
-    return { success: true, message: 'Jadwal berhasil ditambahkan!', schedule: newSchedule };
-  } catch (error) {
-    console.error('Error adding schedule:', error);
-    return { success: false, message: 'Terjadi kesalahan saat tambah jadwal' };
   }
 };
 
-// Update booking status
-export const updateBookingStatus = (bookingId, newStatus) => {
+/**
+ * Update booking status (ADMIN only)
+ * @param {String} bookingId - MongoDB ObjectId
+ * @param {String} newStatus - New status (pending/confirmed/completed/cancelled)
+ * @returns {Promise<Object>} { success, message }
+ */
+export const updateBookingStatus = async (bookingId, newStatus) => {
   try {
-    const bookings = getAllBookings();
-    const index = bookings.findIndex(b => b.id === bookingId);
+    // Transformer will handle status mapping (confirmed/completed → success)
+    await pemesananAPI.updateStatus(bookingId, newStatus);
     
-    if (index === -1) {
-      return { success: false, message: 'Booking tidak ditemukan!' };
-    }
-
-    bookings[index].status = newStatus;
-    bookings[index].updatedAt = new Date().toISOString();
-
-    localStorage.setItem('bookings', JSON.stringify(bookings));
-    return { success: true, message: 'Status booking berhasil diupdate!' };
+    return { 
+      success: true, 
+      message: 'Status booking berhasil diupdate!' 
+    };
   } catch (error) {
     console.error('Error updating booking status:', error);
-    return { success: false, message: 'Terjadi kesalahan saat update status' };
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Terjadi kesalahan saat update status' 
+    };
   }
 };
 
+/**
+ * Cancel booking
+ * @param {String} bookingId - MongoDB ObjectId
+ * @returns {Promise<Object>} { success, message }
+ */
+export const cancelBooking = async (bookingId) => {
+  try {
+    await pemesananAPI.cancel(bookingId);
+    
+    return { 
+      success: true, 
+      message: 'Booking berhasil dibatalkan!' 
+    };
+  } catch (error) {
+    console.error('Error canceling booking:', error);
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Terjadi kesalahan saat membatalkan booking' 
+    };
+  }
+};
+
+// ==========================================
+// EXPORTS
+// ==========================================
+
 export default {
+  // Legacy functions
   initializeDummyData,
   clearAllData,
   getAllUsers,
+  
+  // Schedules
   getAllSchedules,
-  getAllBookings,
   getActiveSchedules,
   searchSchedules,
   getScheduleById,
+  addSchedule,
   updateSchedule,
   deleteSchedule,
-  addSchedule,
-  updateBookingStatus
+  
+  // Bookings
+  getAllBookings,
+  getUserBookings,
+  addBooking,
+  updateBookingStatus,
+  cancelBooking
 };
