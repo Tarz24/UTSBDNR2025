@@ -692,8 +692,6 @@ export const addSchedule = async scheduleData => {
 export const addBooking = async bookingData => {
   const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
 
-  console.log("[addBooking] Starting with data:", bookingData)
-
   try {
     // Validate required fields
     if (!bookingData.user || !bookingData.jadwal) {
@@ -708,17 +706,14 @@ export const addBooking = async bookingData => {
       return { success: false, message: "Nomor kursi harus diisi!" }
     }
 
-    // Build backend payload with new field names
     const payload = {
-      id: bookingData.id || undefined, // Optional custom ID
-      user: bookingData.user, // MongoDB ObjectId
-      jadwal: bookingData.jadwal, // MongoDB ObjectId
+      id: bookingData.id || undefined,
+      user: bookingData.user,
+      jadwal: bookingData.jadwal,
       seats: bookingData.seats,
-      nomor_kursi: bookingData.nomor_kursi, // Array of strings
+      nomor_kursi: bookingData.nomor_kursi,
       totalPrice: bookingData.totalPrice,
     }
-
-    console.log("[addBooking] Payload:", payload)
 
     const res = await fetch(`${base}/pemesanan`, {
       method: "POST",
@@ -726,25 +721,17 @@ export const addBooking = async bookingData => {
       body: JSON.stringify(payload),
     })
 
-    console.log("[addBooking] API Response status:", res.status)
-
     const respBody = await (async () => {
       try {
         return await res.json()
       } catch (e) {
-        console.warn("[addBooking] Failed to parse response body:", e)
         return null
       }
     })()
 
-    console.log("[addBooking] API Response body:", respBody)
-
     if (res.ok) {
-      console.log("[addBooking] ✅ Success")
       return { success: true, message: "Pemesanan berhasil ditambahkan!", booking: respBody }
     } else {
-      console.error("[addBooking] ❌ API Failed:", res.status, respBody)
-
       // Handle validation errors from backend
       if (respBody && respBody.errors && Array.isArray(respBody.errors)) {
         const errorMessages = respBody.errors.map(err => err.msg || err.message).join(", ")
@@ -754,7 +741,6 @@ export const addBooking = async bookingData => {
       return { success: false, message: respBody?.message || `API error: ${res.status}`, details: respBody }
     }
   } catch (error) {
-    console.error("[addBooking] ❌ Exception:", error)
     return { success: false, message: `Error: ${error.message}` }
   }
 }
@@ -762,8 +748,6 @@ export const addBooking = async bookingData => {
 // Update booking status
 export const updateBookingStatus = async (bookingId, newStatus) => {
   const base = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
-
-  console.log("[updateBookingStatus] Starting update:", { bookingId, newStatus })
 
   // Use backend convenience endpoints when possible
   try {

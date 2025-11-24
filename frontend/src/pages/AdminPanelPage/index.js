@@ -253,8 +253,6 @@ const AdminPanelPage = () => {
   const submitBooking = async e => {
     e.preventDefault()
 
-    console.log("[submitBooking] Form data:", bookingForm)
-
     // Validation
     if (!bookingForm.userId) {
       alert("Pilih user terlebih dahulu!")
@@ -279,8 +277,7 @@ const AdminPanelPage = () => {
     }
 
     try {
-      // Step 1: Ensure user exists in MongoDB
-      console.log("[submitBooking] Step 1: Ensuring user exists in MongoDB...")
+      // Ensure user exists in MongoDB
       const selectedUser = users.find(u => (u._id || u.id) === bookingForm.userId)
       if (!selectedUser) {
         alert("User tidak ditemukan!")
@@ -288,7 +285,6 @@ const AdminPanelPage = () => {
       }
 
       const userResult = await ensureUserInMongoDB(selectedUser)
-      console.log("[submitBooking] User result:", userResult)
 
       if (!userResult.success) {
         alert(`Gagal memastikan user di database: ${userResult.message}`)
@@ -296,23 +292,18 @@ const AdminPanelPage = () => {
       }
 
       const mongoUserId = userResult.userId
-      console.log("[submitBooking] MongoDB User ID:", mongoUserId)
 
-      // Step 2: Build payload for MongoDB API with new field names
+      // Build payload for MongoDB API
       const payload = {
-        id: bookingForm.id || undefined, // Custom ID (optional)
-        user: mongoUserId, // MongoDB ObjectId
-        jadwal: bookingForm.scheduleId, // MongoDB ObjectId dari schedule
+        id: bookingForm.id || undefined,
+        user: mongoUserId,
+        jadwal: bookingForm.scheduleId,
         seats: Number(bookingForm.seats),
         nomor_kursi: seatArray,
         totalPrice: Number(bookingForm.totalPrice),
       }
 
-      console.log("[submitBooking] Payload:", payload)
-
-      // Step 3: Create booking
       const result = await addBooking(payload)
-      console.log("[submitBooking] Result:", result)
 
       if (result.success) {
         await loadData()
@@ -334,7 +325,6 @@ const AdminPanelPage = () => {
         alert(result.message || "Gagal menambahkan pemesanan!")
       }
     } catch (error) {
-      console.error("[submitBooking] Exception:", error)
       alert(`Error: ${error.message}`)
     }
   }
