@@ -46,7 +46,7 @@ const AdminPanelPage = () => {
     // Load schedules from backend API (falls back to empty array on error)
     const schedulesData = await fetchAllSchedules()
     setSchedules(schedulesData || [])
-    
+
     // Load users from localStorage, filter out admin users
     try {
       const allUsers = getAllUsers()
@@ -201,7 +201,7 @@ const AdminPanelPage = () => {
 
   const handleBookingInputChange = e => {
     const { name, value } = e.target
-    
+
     // Auto-fill user data when user is selected
     if (name === "userId" && value) {
       const selectedUser = users.find(u => (u._id || u.id) === value)
@@ -211,12 +211,12 @@ const AdminPanelPage = () => {
           userId: value,
           userName: selectedUser.namaLengkap || selectedUser.nama || "",
           email: selectedUser.email || "",
-          phone: selectedUser.noHp || selectedUser.no_hp || ""
+          phone: selectedUser.noHp || selectedUser.no_hp || "",
         }))
         return
       }
     }
-    
+
     // Auto-fill schedule data and calculate price when schedule is selected
     if (name === "scheduleId" && value) {
       const selectedSchedule = schedules.find(s => (s._id || s.id) === value)
@@ -226,12 +226,12 @@ const AdminPanelPage = () => {
         setBookingForm(prev => ({
           ...prev,
           scheduleId: value,
-          totalPrice: totalPrice
+          totalPrice: totalPrice,
         }))
         return
       }
     }
-    
+
     // Recalculate price when seats change
     if (name === "seats" && bookingForm.scheduleId) {
       const selectedSchedule = schedules.find(s => (s._id || s.id) === bookingForm.scheduleId)
@@ -241,43 +241,43 @@ const AdminPanelPage = () => {
         setBookingForm(prev => ({
           ...prev,
           seats: seats,
-          totalPrice: totalPrice
+          totalPrice: totalPrice,
         }))
         return
       }
     }
-    
+
     setBookingForm(prev => ({ ...prev, [name]: value }))
   }
 
   const submitBooking = async e => {
     e.preventDefault()
-    
+
     console.log("[submitBooking] Form data:", bookingForm)
-    
+
     // Validation
     if (!bookingForm.userId) {
       alert("Pilih user terlebih dahulu!")
       return
     }
-    
+
     if (!bookingForm.scheduleId) {
       alert("Pilih jadwal terlebih dahulu!")
       return
     }
-    
+
     if (!bookingForm.seatNumbers || bookingForm.seatNumbers.trim() === "") {
       alert("Nomor kursi harus diisi!")
       return
     }
-    
+
     // Parse seat numbers
     const seatArray = bookingForm.seatNumbers.split(/\s*,\s*/g).filter(s => s.length > 0)
     if (seatArray.length === 0) {
       alert("Nomor kursi tidak valid!")
       return
     }
-    
+
     try {
       // Step 1: Ensure user exists in MongoDB
       console.log("[submitBooking] Step 1: Ensuring user exists in MongoDB...")
@@ -286,18 +286,18 @@ const AdminPanelPage = () => {
         alert("User tidak ditemukan!")
         return
       }
-      
+
       const userResult = await ensureUserInMongoDB(selectedUser)
       console.log("[submitBooking] User result:", userResult)
-      
+
       if (!userResult.success) {
         alert(`Gagal memastikan user di database: ${userResult.message}`)
         return
       }
-      
+
       const mongoUserId = userResult.userId
       console.log("[submitBooking] MongoDB User ID:", mongoUserId)
-      
+
       // Step 2: Build payload for MongoDB API with new field names
       const payload = {
         id: bookingForm.id || undefined, // Custom ID (optional)
@@ -305,15 +305,15 @@ const AdminPanelPage = () => {
         jadwal: bookingForm.scheduleId, // MongoDB ObjectId dari schedule
         seats: Number(bookingForm.seats),
         nomor_kursi: seatArray,
-        totalPrice: Number(bookingForm.totalPrice)
+        totalPrice: Number(bookingForm.totalPrice),
       }
-      
+
       console.log("[submitBooking] Payload:", payload)
-      
+
       // Step 3: Create booking
       const result = await addBooking(payload)
       console.log("[submitBooking] Result:", result)
-      
+
       if (result.success) {
         await loadData()
         setShowAddBookingModal(false)
@@ -916,7 +916,7 @@ const AdminPanelPage = () => {
                 <input type="text" name="id" value={bookingForm.id} onChange={handleBookingInputChange} placeholder="BK001" />
                 <small style={{ color: "#666", fontSize: "12px" }}>Kosongkan untuk generate otomatis</small>
               </div>
-              
+
               <div className="form-group">
                 <label>Pilih User *</label>
                 <select name="userId" value={bookingForm.userId} onChange={handleBookingInputChange} required>

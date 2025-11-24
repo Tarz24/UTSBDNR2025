@@ -3,13 +3,7 @@ const express = require("express")
 const router = express.Router()
 const { body } = require("express-validator")
 
-const {
-  getUsers,
-  getUserById,
-  createUser,
-  updateUser,
-  deleteUser
-} = require("../controllers/userController")
+const { getUsers, getUserById, createUser, updateUser, deleteUser } = require("../controllers/userController")
 
 // GET all users (with optional email filter)
 router.get("/users", getUsers)

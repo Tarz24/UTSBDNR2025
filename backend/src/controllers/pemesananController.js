@@ -173,10 +173,10 @@ const createPemesanan = async (req, res) => {
   }
   try {
     const { id, user, jadwal, seats, nomor_kursi, totalPrice } = req.body
-    
-    console.log('=== CREATE PEMESANAN ===')
-    console.log('Request body:', JSON.stringify(req.body, null, 2))
-    
+
+    console.log("=== CREATE PEMESANAN ===")
+    console.log("Request body:", JSON.stringify(req.body, null, 2))
+
     const payload = {
       id: id || undefined, // Custom ID (optional)
       user,
@@ -185,86 +185,86 @@ const createPemesanan = async (req, res) => {
       nomor_kursi,
       totalPrice,
       bookingDate: new Date(),
-      status: 'pending'
+      status: "pending",
     }
-    
+
     // Fetch user data for snapshot
     if (user) {
       try {
-        const UserModel = require('../models/User')
+        const UserModel = require("../models/User")
         const userDoc = await UserModel.findById(user)
         if (userDoc) {
           payload.userId = userDoc.id || String(userDoc._id) // Use custom id or MongoDB _id as string
           payload.userName = userDoc.namaLengkap || userDoc.nama // Try namaLengkap first, then nama
           payload.userEmail = userDoc.email
           payload.userPhone = userDoc.noHp || userDoc.no_hp // Try noHp first, then no_hp
-          console.log('✓ User snapshot:', { userId: payload.userId, userName: payload.userName, userEmail: payload.userEmail, userPhone: payload.userPhone })
+          console.log("✓ User snapshot:", { userId: payload.userId, userName: payload.userName, userEmail: payload.userEmail, userPhone: payload.userPhone })
         } else {
-          console.warn('⚠️ User not found for ObjectId:', user)
+          console.warn("⚠️ User not found for ObjectId:", user)
         }
       } catch (err) {
-        console.error('❌ Failed to fetch user:', err.message)
+        console.error("❌ Failed to fetch user:", err.message)
       }
     }
-    
+
     // Fetch jadwal data for snapshot
     if (jadwal) {
       try {
-        const JadwalModel = require('../models/Jadwal')
+        const JadwalModel = require("../models/Jadwal")
         const jadwalDoc = await JadwalModel.findById(jadwal)
         if (jadwalDoc) {
-          console.log('🔍 DEBUG Jadwal Document:', JSON.stringify(jadwalDoc.toObject(), null, 2))
-          
+          console.log("🔍 DEBUG Jadwal Document:", JSON.stringify(jadwalDoc.toObject(), null, 2))
+
           payload.scheduleId = jadwalDoc.id || String(jadwalDoc._id) // Custom ID like JDW005 or MongoDB _id as string
           payload.origin = jadwalDoc.origin || jadwalDoc.rute_awal // Try origin first, then rute_awal
           payload.destination = jadwalDoc.destination || jadwalDoc.rute_tujuan // Try destination first, then rute_tujuan
           payload.price = jadwalDoc.price || jadwalDoc.harga // Try price first, then harga
-          
+
           // Parse date and time from jam_berangkat (Date field) or from date/time fields
           const dateField = jadwalDoc.date || jadwalDoc.tanggal_keberangkatan || jadwalDoc.jam_berangkat
           const timeField = jadwalDoc.time || jadwalDoc.waktu_keberangkatan
-          
+
           if (dateField) {
             const date = new Date(dateField)
             if (!isNaN(date.getTime())) {
-              payload.date = date.toISOString().split('T')[0] // YYYY-MM-DD
-              
+              payload.date = date.toISOString().split("T")[0] // YYYY-MM-DD
+
               // If no separate time field, extract from date
               if (!timeField) {
-                const hours = String(date.getHours()).padStart(2, '0')
-                const minutes = String(date.getMinutes()).padStart(2, '0')
+                const hours = String(date.getHours()).padStart(2, "0")
+                const minutes = String(date.getMinutes()).padStart(2, "0")
                 payload.time = `${hours}:${minutes}` // HH:MM
               }
             }
           }
-          
+
           // Parse time if provided separately
           if (timeField) {
-            if (typeof timeField === 'string') {
+            if (typeof timeField === "string") {
               // Already in string format like "08:00"
-              const [hours, minutes] = timeField.split(':')
-              payload.time = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}` // HH:MM
+              const [hours, minutes] = timeField.split(":")
+              payload.time = `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}` // HH:MM
             } else if (timeField instanceof Date) {
-              const hours = String(timeField.getHours()).padStart(2, '0')
-              const minutes = String(timeField.getMinutes()).padStart(2, '0')
+              const hours = String(timeField.getHours()).padStart(2, "0")
+              const minutes = String(timeField.getMinutes()).padStart(2, "0")
               payload.time = `${hours}:${minutes}`
             }
           }
-          
-          console.log('✓ Jadwal snapshot:', { scheduleId: payload.scheduleId, origin: payload.origin, destination: payload.destination, date: payload.date, time: payload.time, price: payload.price })
+
+          console.log("✓ Jadwal snapshot:", { scheduleId: payload.scheduleId, origin: payload.origin, destination: payload.destination, date: payload.date, time: payload.time, price: payload.price })
         } else {
-          console.warn('⚠️ Jadwal not found for ObjectId:', jadwal)
+          console.warn("⚠️ Jadwal not found for ObjectId:", jadwal)
         }
       } catch (err) {
-        console.error('❌ Failed to fetch jadwal:', err.message)
+        console.error("❌ Failed to fetch jadwal:", err.message)
       }
     }
-    
-    console.log('📦 Full payload before save:', JSON.stringify(payload, null, 2))
+
+    console.log("📦 Full payload before save:", JSON.stringify(payload, null, 2))
     const saved = await new PemesananModel(payload).save()
-    console.log('✅ Pemesanan saved with _id:', saved._id)
-    console.log('💾 Saved document:', JSON.stringify(saved.toObject(), null, 2))
-    
+    console.log("✅ Pemesanan saved with _id:", saved._id)
+    console.log("💾 Saved document:", JSON.stringify(saved.toObject(), null, 2))
+
     res.status(201).json(saved)
   } catch (error) {
     console.error("❌ Error membuat pemesanan:", error)
