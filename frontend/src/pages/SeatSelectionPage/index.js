@@ -1,248 +1,215 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import Navbar from '../../components/common/Navbar';
-import Footer from '../../components/common/Footer';
-import './SeatSelectionPage.css';
+import React, { useState, useEffect } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
+import { useAuth } from "../../context/AuthContext"
+import { addBooking, ensureUserInMongoDB } from "../../utils/dataManager"
+import Navbar from "../../components/common/Navbar"
+import Footer from "../../components/common/Footer"
+import "./SeatSelectionPage.css"
 
 function SeatSelectionPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { isLoggedIn, loading } = useAuth();
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { currentUser, isLoggedIn } = useAuth()
 
-  // Redirect jika belum login
-  useEffect(() => {
-    if (!loading && !isLoggedIn) {
-      alert('Anda harus login terlebih dahulu!');
-      navigate('/login');
-    }
-  }, [isLoggedIn, loading, navigate]);
+  const [selectedSeats, setSelectedSeats] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  // Get booking data dari SearchPage
-  const [bookingData, setBookingData] = useState(null);
-  const [selectedSeats, setSelectedSeats] = useState([]);
-  const [occupiedSeats] = useState([3, 7, 12, 15, 18]); // Contoh kursi yang sudah terisi
+  // Get schedule and booking data from navigation state
+  const { schedule, searchParams } = location.state || {}
 
   useEffect(() => {
-    if (location.state?.bookingData) {
-      setBookingData(location.state.bookingData);
-    } else {
-      // Jika tidak ada data, redirect ke search
-      navigate('/search');
-    }
-  }, [location.state, navigate]);
-
-  // Generate kursi (4 baris x 5 kolom = 20 kursi)
-  const totalSeats = 20;
-  const seatsPerRow = 4;
-
-  const handleSeatClick = (seatNumber) => {
-    // Cek apakah kursi sudah terisi
-    if (occupiedSeats.includes(seatNumber)) {
-      return;
+    if (!isLoggedIn) {
+      navigate("/login")
+      return
     }
 
-    // Toggle seat selection
+    if (!schedule || !searchParams) {
+      alert("Data tidak lengkap!")
+      navigate("/search")
+    }
+  }, [isLoggedIn, schedule, searchParams, navigate])
+
+  // Generate seat layout (20 seats: 4 rows x 5 columns)
+  const totalSeats = schedule?.originalData?.seats || 20
+  const availableSeats = schedule?.originalData?.availableSeats || 20
+  const bookedSeatsCount = totalSeats - availableSeats
+
+  // Create seat array with simple numbers (1, 2, 3, ...)
+  const seats = Array.from({ length: totalSeats }, (_, i) => {
+    const seatNumber = i + 1 // Simple numeric seat numbers: 1, 2, 3, ...
+
+    // First bookedSeatsCount seats are booked
+    const isBooked = i < bookedSeatsCount
+
+    return {
+      number: seatNumber,
+      isBooked,
+      isSelected: false,
+    }
+  })
+
+  const handleSeatClick = seatNumber => {
+    const seat = seats.find(s => s.number === seatNumber)
+    if (seat.isBooked) return
+
     if (selectedSeats.includes(seatNumber)) {
-      setSelectedSeats(selectedSeats.filter(s => s !== seatNumber));
+      setSelectedSeats(selectedSeats.filter(s => s !== seatNumber))
     } else {
-      // Cek apakah sudah mencapai jumlah penumpang
-      if (bookingData && selectedSeats.length >= Number(bookingData.seats)) {
-        alert(`Anda hanya dapat memilih ${bookingData.seats} kursi sesuai jumlah penumpang`);
-        return;
+      if (selectedSeats.length >= searchParams.penumpang) {
+        alert(`Anda hanya bisa memilih ${searchParams.penumpang} kursi sesuai jumlah penumpang!`)
+        return
       }
-      setSelectedSeats([...selectedSeats, seatNumber]);
+      setSelectedSeats([...selectedSeats, seatNumber])
     }
-  };
-
-  const getSeatStatus = (seatNumber) => {
-    if (occupiedSeats.includes(seatNumber)) return 'occupied';
-    if (selectedSeats.includes(seatNumber)) return 'selected';
-    return 'available';
-  };
-
-  const handleContinue = () => {
-    if (selectedSeats.length !== Number(bookingData?.seats)) {
-      alert(`Silakan pilih ${bookingData.seats} kursi sesuai jumlah penumpang`);
-      return;
-    }
-
-    // Simpan booking ke localStorage dengan selectedSeats
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    const newBookingId = `BK${String(bookings.length + 1).padStart(3, '0')}`;
-    
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    const newBooking = {
-      id: newBookingId,
-      userId: currentUser?.id,
-      userName: currentUser?.namaLengkap,
-      userEmail: currentUser?.email,
-      userPhone: currentUser?.noHp,
-      scheduleId: bookingData.scheduleId,
-      origin: bookingData.origin,
-      destination: bookingData.destination,
-      date: bookingData.date,
-      time: bookingData.time,
-      seats: bookingData.seats,
-      selectedSeats: selectedSeats.sort((a, b) => a - b),
-      price: bookingData.price,
-      totalPrice: bookingData.totalPrice,
-      status: 'confirmed',
-      bookingDate: new Date().toISOString()
-    };
-
-    bookings.push(newBooking);
-    localStorage.setItem('bookings', JSON.stringify(bookings));
-
-    // Navigate ke MyTicketPage dengan data booking + kursi
-    navigate('/my-ticket', {
-      state: {
-        bookingData: {
-          ...bookingData,
-          id: newBookingId,
-          selectedSeats: selectedSeats.sort((a, b) => a - b)
-        }
-      }
-    });
-  };
-
-  const handleBack = () => {
-    navigate('/search', {
-      state: {
-        searchParams: location.state?.searchParams
-      }
-    });
-  };
-
-  if (loading || !isLoggedIn || !bookingData) {
-    return null;
   }
+
+  // Generate custom booking ID (BK + 3 random digits)
+  const generateBookingId = () => {
+    const randomNum = Math.floor(Math.random() * 900) + 100 // 100-999
+    return `BK${randomNum}`
+  }
+
+  const handleConfirmBooking = async () => {
+    if (selectedSeats.length !== searchParams.penumpang) {
+      alert(`Harap pilih ${searchParams.penumpang} kursi!`)
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      // Ensure user exists in MongoDB
+      const userResult = await ensureUserInMongoDB(currentUser)
+
+      if (!userResult.success) {
+        alert(`Gagal memastikan user di database: ${userResult.message}`)
+        setLoading(false)
+        return
+      }
+
+      // Create booking payload with custom ID
+      const bookingPayload = {
+        id: generateBookingId(), // Custom 5-character ID (BK + 3 digits)
+        user: userResult.userId, // MongoDB ObjectId
+        jadwal: schedule.originalData._id || schedule.id, // MongoDB ObjectId
+        seats: searchParams.penumpang, // Jumlah kursi (integer)
+        nomor_kursi: selectedSeats.map(String), // Array nomor kursi ["1", "2", "3"]
+        totalPrice: schedule.harga * searchParams.penumpang,
+      }
+
+      // Submit booking to MongoDB
+      const result = await addBooking(bookingPayload)
+
+      if (result.success) {
+        alert("Booking berhasil dibuat!")
+        navigate("/my-ticket")
+      } else {
+        alert(result.message || "Gagal membuat booking!")
+      }
+    } catch (error) {
+      alert(`Error: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!schedule || !searchParams) {
+    return null
+  }
+
+  const totalPrice = schedule.harga * searchParams.penumpang
 
   return (
     <div className="seat-selection-page">
       <Navbar />
 
-      <div className="seat-selection-container">
-        {/* Header */}
-        <div className="selection-header">
-          <button className="btn-back" onClick={handleBack}>← Kembali</button>
-          <h1>Pilih Kursi Anda</h1>
-          <div className="selection-step">Langkah 2 dari 3</div>
-        </div>
-
-        {/* Booking Info */}
-        <div className="booking-info-card">
-          <div className="info-row">
-            <span className="info-label">Rute:</span>
-            <span className="info-value">{bookingData.origin} → {bookingData.destination}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Tanggal:</span>
-            <span className="info-value">{bookingData.date} • {bookingData.time}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Penumpang:</span>
-            <span className="info-value">{bookingData.seats} orang</span>
-          </div>
-        </div>
-
+      <div className="seat-container">
         <div className="seat-content">
-          {/* Seat Layout */}
-          <div className="seat-layout-section">
-            <div className="driver-section">
-              <div className="driver-icon">🚗</div>
-              <span>Supir</span>
+          {/* Schedule Info */}
+          <div className="schedule-info">
+            <h2>Detail Perjalanan</h2>
+            <div className="info-card">
+              <div className="info-row">
+                <span className="label">Dari:</span>
+                <span className="value">{schedule.dari}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Tujuan:</span>
+                <span className="value">{schedule.tujuan}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Tanggal:</span>
+                <span className="value">{schedule.tanggal}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Jam:</span>
+                <span className="value">{schedule.jam}</span>
+              </div>
+              <div className="info-row">
+                <span className="label">Penumpang:</span>
+                <span className="value">{searchParams.penumpang} orang</span>
+              </div>
             </div>
+          </div>
 
-            <div className="seats-grid">
-              {Array.from({ length: totalSeats }, (_, i) => i + 1).map((seatNumber) => {
-                const status = getSeatStatus(seatNumber);
-                const isAisle = seatNumber % seatsPerRow === 2; // Lorong setelah kursi ke-2 setiap baris
-                
-                return (
-                  <React.Fragment key={seatNumber}>
-                    <button
-                      className={`seat ${status}`}
-                      onClick={() => handleSeatClick(seatNumber)}
-                      disabled={status === 'occupied'}
-                    >
-                      <div className="seat-number">{seatNumber}</div>
-                      <div className="seat-icon">💺</div>
-                    </button>
-                    {isAisle && <div className="aisle"></div>}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-
-            {/* Legend */}
+          {/* Seat Selection */}
+          <div className="seat-selection">
+            <h2>Pilih Kursi</h2>
             <div className="seat-legend">
               <div className="legend-item">
-                <div className="legend-seat available"></div>
+                <div className="seat-box available"></div>
                 <span>Tersedia</span>
               </div>
               <div className="legend-item">
-                <div className="legend-seat selected"></div>
+                <div className="seat-box selected"></div>
                 <span>Dipilih</span>
               </div>
               <div className="legend-item">
-                <div className="legend-seat occupied"></div>
+                <div className="seat-box booked"></div>
                 <span>Terisi</span>
               </div>
             </div>
+
+            <div className="bus-layout">
+              <div className="driver-seat">Supir</div>
+              <div className="seats-grid">
+                {seats.map(seat => (
+                  <div key={seat.number} className={`seat ${seat.isBooked ? "booked" : ""} ${selectedSeats.includes(seat.number) ? "selected" : ""}`} onClick={() => handleSeatClick(seat.number)}>
+                    {seat.number}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="selected-seats-info">
+              <p>
+                Kursi Dipilih: <strong>{selectedSeats.length > 0 ? selectedSeats.join(", ") : "Belum ada"}</strong>
+              </p>
+              <p>
+                Sisa kursi yang harus dipilih: <strong>{searchParams.penumpang - selectedSeats.length}</strong>
+              </p>
+            </div>
           </div>
 
-          {/* Summary Sidebar */}
-          <div className="selection-summary">
+          {/* Price Summary */}
+          <div className="price-summary">
             <div className="summary-card">
-              <h3>Ringkasan Pemilihan</h3>
-
-              <div className="selected-seats-info">
-                <div className="seats-count">
-                  <span className="count-label">Kursi Dipilih:</span>
-                  <span className="count-value">{selectedSeats.length} / {bookingData.seats}</span>
-                </div>
-
-                {selectedSeats.length > 0 && (
-                  <div className="seats-list">
-                    {selectedSeats.sort((a, b) => a - b).map(seat => (
-                      <span key={seat} className="seat-badge">{seat}</span>
-                    ))}
-                  </div>
-                )}
+              <h3>Ringkasan Pembayaran</h3>
+              <div className="price-row">
+                <span>Harga per kursi:</span>
+                <span>Rp {schedule.harga.toLocaleString("id-ID")}</span>
               </div>
-
-              <div className="summary-divider"></div>
-
-              <div className="price-info">
-                <div className="price-row">
-                  <span>Harga per orang</span>
-                  <span>Rp {bookingData.price.toLocaleString('id-ID')}</span>
-                </div>
-                <div className="price-row">
-                  <span>Jumlah penumpang</span>
-                  <span>× {bookingData.seats}</span>
-                </div>
+              <div className="price-row">
+                <span>Jumlah penumpang:</span>
+                <span>{searchParams.penumpang} orang</span>
               </div>
-
-              <div className="summary-divider"></div>
-
-              <div className="total-price">
-                <span>Total Pembayaran</span>
-                <span className="price">Rp {bookingData.totalPrice.toLocaleString('id-ID')}</span>
+              <div className="price-row total">
+                <span>Total:</span>
+                <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
               </div>
-
-              <button 
-                className="btn-continue" 
-                onClick={handleContinue}
-                disabled={selectedSeats.length !== Number(bookingData.seats)}
-              >
-                Lanjut ke Pembayaran
+              <button className="btn-confirm" onClick={handleConfirmBooking} disabled={selectedSeats.length !== searchParams.penumpang || loading}>
+                {loading ? "Memproses..." : "Konfirmasi Booking"}
               </button>
-
-              <div className="selection-note">
-                <p>💡 Pilih {bookingData.seats} kursi sesuai jumlah penumpang Anda</p>
-              </div>
             </div>
           </div>
         </div>
@@ -250,7 +217,7 @@ function SeatSelectionPage() {
 
       <Footer />
     </div>
-  );
+  )
 }
 
-export default SeatSelectionPage;
+export default SeatSelectionPage

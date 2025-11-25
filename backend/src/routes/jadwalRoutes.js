@@ -2,25 +2,41 @@
 // Kasyful Haq Bachariputra
 // 17 November 2025
 
-const { body } = require('express-validator');
-const express = require('express');
-const router = require('express').Router();
+const { body } = require("express-validator")
+const express = require("express")
+const router = require("express").Router()
 
-const { getJadwal, createJadwal, updateJadwal, deleteJadwal } = require('../controllers/jadwalController');
+const { getJadwal, createJadwal, updateJadwal, deleteJadwal } = require("../controllers/jadwalController")
 
 // Route handler untuk model 'jadwal'
 // get / read
-router.get('/jadwal', getJadwal);
+router.get("/jadwal", getJadwal)
 
 // post / create
-router.post('/jadwal', body('rute_awal').notEmpty(), body('rute_tujuan').notEmpty(), body('jam_berangkat').isDate().notEmpty(), 
-body('pool_keberangkatan').notEmpty(), body('pool_tujuan').notEmpty(), body('estimasi_jam_tiba').isDate().notEmpty(), body('harga').isInt().notEmpty(),
-body('total_kursi').isInt().notEmpty(), body('kursi_tersedia').isInt().notEmpty(), createJadwal);
+router.post(
+  "/jadwal",
+  // optional custom ID from frontend e.g. JDW005
+  body("id")
+    .optional()
+    .isString()
+    .matches(/^JDW\d{3}$/)
+    .withMessage("ID harus berbentuk JDWxxx, mis. JDW005"),
+  body("rute_awal").notEmpty(),
+  body("rute_tujuan").notEmpty(),
+  body("jam_berangkat").notEmpty().isISO8601(),
+  body("pool_keberangkatan").notEmpty(),
+  body("pool_tujuan").notEmpty(),
+  body("estimasi_jam_tiba").notEmpty().isISO8601(),
+  body("harga").isInt().notEmpty(),
+  body("total_kursi").isInt().notEmpty(),
+  body("kursi_tersedia").isInt().notEmpty(),
+  createJadwal
+)
 
 // patch / update
-router.patch('/jadwal/:id', updateJadwal);
+router.patch("/jadwal/:id", updateJadwal)
 
 // delete
-router.delete('/jadwal/:id', deleteJadwal);
+router.delete("/jadwal/:id", deleteJadwal)
 
-module.exports = router;
+module.exports = router

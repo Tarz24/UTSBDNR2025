@@ -1,47 +1,73 @@
-const mongoose = require('mongoose');
-const { Schema } = mongoose; // Kita butuh Schema untuk referensi
+const mongoose = require("mongoose")
+const { Schema } = mongoose // Kita butuh Schema untuk referensi
 
-const pemesananSchema = new mongoose.Schema({
-  kode_booking: {
-    type: String,
-    required: true,
-    unique: true
+const pemesananSchema = new mongoose.Schema(
+  {
+    // Custom ID manual input (like BK001, BK002)
+    id: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+    kode_booking: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    // Ini adalah "JOIN" ke collection 'users' (Poin 5 UTS)
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User", // Referensi ke Model 'User'
+      required: true,
+    },
+    // Snapshot data user untuk performa (denormalized)
+    userId: String, // Custom ID dari localStorage
+    userName: String,
+    userEmail: String,
+    userPhone: String,
+
+    // Ini adalah "JOIN" ke collection 'jadwal' (Poin 5 UTS)
+    jadwal: {
+      type: Schema.Types.ObjectId,
+      ref: "Jadwal", // Referensi ke Model 'Jadwal'
+      required: true,
+    },
+    // Snapshot data jadwal untuk performa (denormalized)
+    scheduleId: String, // Custom ID like JDW005
+    origin: String,
+    destination: String,
+    date: String, // Format: YYYY-MM-DD
+    time: String, // Format: HH:MM
+    price: Number,
+
+    // Booking info
+    seats: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    nomor_kursi: {
+      type: [String], // Array of strings, misal: ["1", "2", "3", "15", "20"]
+      required: true,
+    },
+    totalPrice: {
+      type: Number,
+      required: true,
+    },
+    bookingDate: {
+      type: Date,
+      default: Date.now,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "completed", "cancelled"],
+      default: "pending",
+    },
   },
-  // Ini adalah "JOIN" ke collection 'users' (Poin 5 UTS)
-  user: {
-    type: Schema.Types.ObjectId,
-    ref: 'User', // Referensi ke Model 'User'
-    required: true
-  },
-  // Ini adalah "JOIN" ke collection 'jadwal' (Poin 5 UTS)
-  jadwal: {
-    type: Schema.Types.ObjectId,
-    ref: 'Jadwal', // Referensi ke Model 'Jadwal'
-    required: true
-  },
-  tanggal_pesan: {
-    type: Date,
-    default: Date.now
-  },
-  jumlah_penumpang: {
-    type: Number,
-    required: true
-  },
-  nomor_kursi: {
-    type: [String], // Array of strings, misal: ["A1", "A2"]
-    required: true
-  },
-  total_harga: {
-    type: Number,
-    required: true
-  },
-  status_pembayaran: {
-    type: String,
-    enum: ['pending', 'success', 'cancelled'], // Hanya boleh diisi 3 nilai ini
-    default: 'pending'
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true
-});
+)
 
-module.exports = mongoose.model('Pemesanan', pemesananSchema);
+module.exports = mongoose.model("Pemesanan", pemesananSchema)
