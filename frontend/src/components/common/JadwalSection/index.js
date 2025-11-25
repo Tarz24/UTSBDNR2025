@@ -22,13 +22,8 @@ function JadwalSection() {
         if (res.ok) {
           const schedules = await res.json()
 
-          // Filter schedules for today first
-          let filteredSchedules = schedules.filter(schedule => schedule.date === today && schedule.status === "active" && (schedule.availableSeats || schedule.kursi_tersedia) > 0)
-
-          // If no today schedules, get upcoming schedules
-          if (filteredSchedules.length === 0) {
-            filteredSchedules = schedules.filter(schedule => schedule.date >= today && schedule.status === "active" && (schedule.availableSeats || schedule.kursi_tersedia) > 0)
-          }
+          // Filter schedules for min today
+          let filteredSchedules = schedules.filter(schedule => schedule.date >= today && schedule.status === "active" && (schedule.availableSeats || schedule.kursi_tersedia) > 0)
 
           // Transform ALL schedules (no limit)
           const transformedSchedules = filteredSchedules.map(schedule => ({

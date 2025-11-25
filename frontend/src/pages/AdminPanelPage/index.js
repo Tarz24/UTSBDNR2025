@@ -941,8 +941,8 @@ const AdminPanelPage = () => {
                   <option value="">-- Pilih Jadwal --</option>
                   {schedules
                     .filter(s => {
-                      const today = new Date().toISOString().split('T')[0]
-                      return s.status === 'active' && s.date >= today
+                      const today = new Date().toISOString().split("T")[0]
+                      return s.status === "active" && s.date >= today
                     })
                     .map(s => (
                       <option key={s._id || s.id} value={s._id || s.id}>
