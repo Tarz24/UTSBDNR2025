@@ -38,7 +38,7 @@ const jadwalSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "completed", "cancelled"],
+      enum: ["active", "inactive", "completed", "cancelled"],
       default: "active",
     },
     // Legacy field names for backward compatibility

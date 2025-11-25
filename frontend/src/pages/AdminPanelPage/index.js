@@ -81,6 +81,7 @@ const AdminPanelPage = () => {
     time: "",
     price: "",
     seats: 40,
+    status: "active",
   })
 
   // State untuk search dan filter bookings
@@ -171,6 +172,7 @@ const AdminPanelPage = () => {
       time: "",
       price: "",
       seats: 40,
+      status: "active",
     })
     setShowAddScheduleModal(true)
   }
@@ -185,6 +187,7 @@ const AdminPanelPage = () => {
       time: schedule.time,
       price: schedule.price,
       seats: schedule.seats,
+      status: schedule.status || "active",
     })
     setShowEditScheduleModal(true)
   }
@@ -358,6 +361,7 @@ const AdminPanelPage = () => {
         time: formData.time,
         price: parseInt(formData.price),
         seats: parseInt(formData.seats),
+        status: formData.status,
       }
       ;(async () => {
         const result = await addSchedule(scheduleData)
@@ -387,6 +391,7 @@ const AdminPanelPage = () => {
         time: formData.time,
         price: parseInt(formData.price),
         seats: parseInt(formData.seats),
+        status: formData.status,
       }
       ;(async () => {
         const idForApi = selectedSchedule?._id || selectedSchedule?.id
@@ -414,6 +419,7 @@ const AdminPanelPage = () => {
       time: "",
       price: "",
       seats: 40,
+      status: "active",
     })
     setSelectedSchedule(null)
   }
@@ -840,6 +846,13 @@ const AdminPanelPage = () => {
                   <label>Jumlah Kursi</label>
                   <input type="number" name="seats" value={formData.seats} onChange={handleInputChange} min="1" required />
                 </div>
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <select name="status" value={formData.status} onChange={handleInputChange} required>
+                  <option value="active">Aktif</option>
+                  <option value="inactive">Tidak Aktif</option>
+                </select>
               </div>
               <div className="modal-actions">
                 <button type="button" className="cancel-btn" onClick={() => setShowEditScheduleModal(false)}>

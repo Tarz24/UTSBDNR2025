@@ -519,6 +519,7 @@ export const updateSchedule = async (scheduleId, updates) => {
       payload.total_kursi = updates.seats
       if (updates.availableSeats !== undefined) payload.kursi_tersedia = updates.availableSeats
     }
+    if (updates.status !== undefined) payload.status = updates.status
     if (updates.date !== undefined || updates.time !== undefined) {
       const currentDate = updates.date || null
       const currentTime = updates.time || "00:00"
@@ -629,6 +630,7 @@ export const addSchedule = async scheduleData => {
       harga: scheduleData.price,
       total_kursi: scheduleData.seats,
       kursi_tersedia: scheduleData.seats,
+      status: scheduleData.status || "active",
     }
 
     const res = await fetch(`${base}/jadwal`, {
