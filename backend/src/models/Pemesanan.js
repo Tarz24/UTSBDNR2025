@@ -45,9 +45,10 @@ const pemesananSchema = new mongoose.Schema(
     seats: {
       type: Number,
       required: true,
+      min: 1,
     },
     nomor_kursi: {
-      type: [String], // Array of strings, misal: ["A1", "A2"]
+      type: [String], // Array of strings, misal: ["1", "2", "3", "15", "20"]
       required: true,
     },
     totalPrice: {

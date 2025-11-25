@@ -34,11 +34,9 @@ function SeatSelectionPage() {
   const availableSeats = schedule?.originalData?.availableSeats || 20
   const bookedSeatsCount = totalSeats - availableSeats
 
-  // Create seat array
+  // Create seat array with simple numbers (1, 2, 3, ...)
   const seats = Array.from({ length: totalSeats }, (_, i) => {
-    const row = String.fromCharCode(65 + Math.floor(i / 5)) // A, B, C, D
-    const col = (i % 5) + 1 // 1, 2, 3, 4, 5
-    const seatNumber = `${row}${col}`
+    const seatNumber = i + 1 // Simple numeric seat numbers: 1, 2, 3, ...
 
     // First bookedSeatsCount seats are booked
     const isBooked = i < bookedSeatsCount
@@ -94,8 +92,8 @@ function SeatSelectionPage() {
         id: generateBookingId(), // Custom 5-character ID (BK + 3 digits)
         user: userResult.userId, // MongoDB ObjectId
         jadwal: schedule.originalData._id || schedule.id, // MongoDB ObjectId
-        seats: searchParams.penumpang,
-        nomor_kursi: selectedSeats,
+        seats: searchParams.penumpang, // Jumlah kursi (integer)
+        nomor_kursi: selectedSeats.map(String), // Array nomor kursi ["1", "2", "3"]
         totalPrice: schedule.harga * searchParams.penumpang,
       }
 

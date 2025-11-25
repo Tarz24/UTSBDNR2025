@@ -972,7 +972,7 @@ const AdminPanelPage = () => {
                 </div>
                 <div className="form-group">
                   <label>Nomor Kursi * (pisah koma)</label>
-                  <input type="text" name="seatNumbers" value={bookingForm.seatNumbers} onChange={handleBookingInputChange} placeholder="A1, A2, A3" required />
+                  <input type="text" name="seatNumbers" value={bookingForm.seatNumbers} onChange={handleBookingInputChange} placeholder="1, 2, 3, 15, 20" required />
                 </div>
               </div>
 

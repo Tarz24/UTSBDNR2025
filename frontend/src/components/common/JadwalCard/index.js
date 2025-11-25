@@ -9,7 +9,7 @@ function JadwalCard({ tanggal, tahun, rute, harga, diskon, onClick }) {
           <div className="date-day">{tanggal}</div>
           <div className="date-year">{tahun}</div>
         </div>
-        <button className="btn-pulang-pergi" onClick={(e) => e.stopPropagation()}>↔️ Pulang Pergi</button>
+        {/* <button className="btn-pulang-pergi" onClick={(e) => e.stopPropagation()}>↔️ Pulang Pergi</button> */}
       </div>
       <div className="jadwal-body">
         <div className="route-info">
@@ -19,7 +19,7 @@ function JadwalCard({ tanggal, tahun, rute, harga, diskon, onClick }) {
         </div>
         <div className="price-info">
           <span className="price-label">Rp {harga.toLocaleString('id-ID')}</span>
-          <span className="discount-badge">{diskon}%</span>
+          {/* <span className="discount-badge">{diskon}%</span> */}
         </div>
       </div>
     </div>

@@ -80,7 +80,7 @@ function JadwalSection() {
     return (
       <section className="jadwal-section">
         <div className="jadwal-container">
-          <h2 className="section-title">Jadwal Tersedia Hari Ini</h2>
+          <h2 className="section-title">Jadwal Tersedia</h2>
           <p style={{ textAlign: "center", padding: "2rem", color: "#666" }}>Memuat jadwal...</p>
         </div>
       </section>
@@ -92,7 +92,7 @@ function JadwalSection() {
     return (
       <section className="jadwal-section">
         <div className="jadwal-container">
-          <h2 className="section-title">Jadwal Tersedia Hari Ini</h2>
+          <h2 className="section-title">Jadwal Tersedia</h2>
           <p style={{ textAlign: "center", padding: "2rem", color: "#666" }}>Tidak ada jadwal tersedia untuk hari ini.</p>
         </div>
       </section>
@@ -102,7 +102,7 @@ function JadwalSection() {
   return (
     <section className="jadwal-section">
       <div className="jadwal-container">
-        <h2 className="section-title">Jadwal Tersedia Hari Ini</h2>
+        <h2 className="section-title">Jadwal Tersedia</h2>
 
         <div className="jadwal-carousel">
           {visibleSchedules.map((jadwal, index) => (
